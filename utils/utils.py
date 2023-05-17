@@ -39,6 +39,14 @@ def convertToDf(*args) -> pd.DataFrame():
         raise "convertToDf Err" + str(ee.args)
 
 
+# region    Corresponding Tx, Rx, Beam test items
+"""
+Tx          --->    ( 7 ~ 14 + 36 ~ 65 ) makeTxTable
+Rx          --->    ( 15 ~ 26 + 66 ~ 105 ) makeRxTable
+BeamForm    --->    ( 105 ~ 109 ) makeBeamFormTable
+"""
+
+
 def makeTxTable(sourcePath):
     filepath = os.path.join(sourcePath, f'RawData.csv')
     df = pd.read_csv(filepath, header=0, sep=',', encoding='UTF-8')
@@ -152,6 +160,21 @@ def makeBeamFormTable(sourcePath):
     WifiBeamForming_Table.to_csv(os.path.join(csvpath, f'BeamForming_Table.csv'), sep=',', encoding='UTF-8')
 
 
+# endregion
+
+
+# region    Corresponding Tx, Rx CALIBRATION items
+"""
+Corresponding test items
+{
+    5. WIFI_RX_CALIBRATION  ---> makeWifiRxCalib5   ,  
+    6. WIFI_TX_CALIBRATION  ---> makeWifiTxCalib6   ,
+    32. WIFI_RX_CALIBRATION ---> makeWifiRxCalib32  ,
+    33. WIFI_TX_CALIBRATION ---> makeWifiTxCalib33
+}
+"""
+
+
 def makeWifiTxCalib33(sourcePath):
     """
     # The testItem of 33. WIFI_TX_CALIBRATION as a CSV which contain two tables
@@ -172,14 +195,14 @@ def makeWifiTxCalib33(sourcePath):
         df = pd.read_csv(filepath, header=0, sep=',', encoding='UTF-8')
         row33 = df.loc[33].transpose().dropna().reset_index(drop=True)
         # row33 = row33[not row33.str.contains("-----------")].reset_index(drop=True)
-        CalibrationTXPower = row33.loc[5:71]
+        CalibrationTXPower = row33.loc[5:72]
         VerifyTXPower = row33.loc[76:144]
         dfsCalfTXPow[['Rate', 'Ant', 'Target', 'Actual', 'Diff']] = CalibrationTXPower.iloc[:].str.split('\s+',
                                                                                                          expand=True)
         dfsVerfTXPow[['Rate', 'Ant', 'Target', 'Actual']] = VerifyTXPower.iloc[:].str.split('\s+', expand=True)
         dfsCalfTXPow.reset_index(drop=True)
         dfsVerfTXPow.reset_index(drop=True)
-        dfsCalfTXPow.loc[20:, ['Actual', 'Diff']] = dfsCalfTXPow.loc[20:, ['Diff', 'Actual']].values
+        dfsCalfTXPow.loc[25:, ['Actual', 'Diff']] = dfsCalfTXPow.loc[25:, ['Diff', 'Actual']].values
         with pd.ExcelWriter(xlsxPath, engine='openpyxl') as writer:
             dfsCalfTXPow.to_excel(writer, sheet_name='CalibrationTXPower', index=False)
             dfsVerfTXPow.to_excel(writer, sheet_name='VerifyTXPower', index=False)
@@ -204,13 +227,13 @@ def makeWifiTxCalib6(sourcePath):
         df = pd.read_csv(filepath, header=0, sep=',', encoding='UTF-8')
         row6 = df.loc[6].transpose().dropna().reset_index(drop=True)
         # row6 = row6[~row6.str.contains("-----------")].reset_index(drop=True)
-        CalibTXPower = row6.loc[5:15]
-        VerifyTXPower = row6.loc[20:30]
+        CalibTXPower = row6.loc[5:16]
+        VerifyTXPower = row6.loc[20:31]
         dfs6Calf[['Rate', 'Ant', 'Target', 'Actual', 'Diff']] = CalibTXPower.iloc[:].str.split('\s+', expand=True)
         dfs6Verf[['Rate', 'Ant', 'Target', 'Actual']] = VerifyTXPower.iloc[:].str.split('\s+', expand=True)
         dfs6Calf.reset_index(drop=True)
         dfs6Verf.reset_index(drop=True)
-        dfs6Calf.loc[5:, ['Actual', 'Diff']] = dfs6Calf.loc[5:, ['Diff', 'Actual']].values
+        dfs6Calf.loc[9:, ['Actual', 'Diff']] = dfs6Calf.loc[9:, ['Diff', 'Actual']].values
         with pd.ExcelWriter(xlsxPath, engine='openpyxl') as writer:
             dfs6Calf.to_excel(writer, sheet_name='CalibrationTXPower', index=False)
             dfs6Verf.to_excel(writer, sheet_name='VerifyTXPower', index=False)
@@ -245,6 +268,7 @@ def makeWifiRxCalib5(sourcePath):
         itemsBack = itemsBack.loc[[0]].reset_index(drop=True)
         result = pd.concat([itemsFront, itemsBack, itemsTestTime])  # selectHeader
         result.columns = ['keys', 'values']
+        result.reset_index(drop=True)
         # print(result)
         csvpath = os.path.join(sourcePath, "Data")
         result.to_csv(os.path.join(csvpath, f'WIFI_RX_CALIBRATION_5.csv'), sep=',', encoding='UTF-8')
@@ -252,15 +276,42 @@ def makeWifiRxCalib5(sourcePath):
         raise f"make Tx Calif5 excel in valid\n" + str(ee.args)
 
 
-def selectRow(rowRange: list, filterData):
+def selectRow(rowRange: list, filterData, isSplit: bool):
     selected_rows = pd.Series(False, index=filterData.index)
+    result = None
     for start, end in rowRange:
         selected_rows[start:end] = True
     selected = filterData[selected_rows]
-    rowValues = selected.iloc[:].str.split(":", expand=True)
-    rowValues[1] = rowValues[1].apply(lambda s: s.split())
-    print(rowValues)
-    return rowValues
+    if isSplit:
+        rowValues = selected.iloc[:].str.split(":", expand=True)
+        rowValues[1] = rowValues[1].apply(lambda s: s.split())
+        print(rowValues)
+        return rowValues
+    else:
+        result = selected.iloc[:].str.split(":", expand=True).reset_index(drop=True)
+        row_ranges = [(1, 3), (5, 7), (9, 11)]
+        last_row_range = (13, None)
+        # exchanges ------------
+        for start, end in row_ranges:
+            result.loc[start:end, [1, 0]] = result.loc[start:end, [0, 1]].values
+        result.loc[last_row_range[0]:, [1, 0]] = result.loc[last_row_range[0]:, [0, 1]].values
+        # exchanges ------------
+        row_ranges = [(0, 3), (4, 7), (8, 11)]
+        last_row_range = (12, None)
+        # melting to combine
+        for i, (start, end) in enumerate(row_ranges):
+            result[1].loc[i * 4] = result[1].loc[start:end].agg(lambda x: x.tolist())
+
+        result[1].loc[12] = result[1].loc[last_row_range[0]:].agg(lambda x: x.tolist())
+        result = result.loc[[0, 4, 8, 12]].reset_index(drop=True)
+
+        # result[1].loc[0] = result[1].loc[1:3].agg(lambda x: x.tolist())
+        # result[1].loc[4] = result[1].loc[5:7].agg(lambda x: x.tolist())
+        # result[1].loc[8] = result[1].loc[9:11].agg(lambda x: x.tolist())
+        # result[1].loc[12] = result[1].loc[12:].agg(lambda x: x.tolist())
+
+        result = result.reset_index(drop=True)
+        return result
 
 
 def makeWifiRxCalib32(sourcePath):
@@ -273,31 +324,23 @@ def makeWifiRxCalib32(sourcePath):
     try:
         df = pd.read_csv(filepath, header=0, sep=',', encoding='UTF-8')
         WIFI_RX_CALIBRATION = df.loc[32].transpose().dropna().reset_index(drop=True)
-        data = WIFI_RX_CALIBRATION.loc[1:51]
+        data = WIFI_RX_CALIBRATION.loc[1:52]
         filterData = data[~data.str.contains("-----------|========")].reset_index(drop=True)
         row_ranges = [(1, 7), (12, 18), (23, 26), (31, 37)]
-        row_FinalGainErr = [(8, 11), (19, 22), (27, 30), (38, 40)]
+        row_FinalGainErr = [(8, 12), (19, 23), (27, 31), (38, 42)]
         lastIndex = WIFI_RX_CALIBRATION.index[-1]
         selectTestTime = WIFI_RX_CALIBRATION.loc[lastIndex:]  # .loc[[-1]].reset_index(drop=True)
-        itemsFront = selectRow(rowRange=row_ranges, filterData=filterData)
-        # itemsBack = selectRow(rowRange=row_FinalGainErr, filterData=filterData)
+        itemsFront = selectRow(rowRange=row_ranges, filterData=filterData, isSplit=True)
+        itemsBack = selectRow(rowRange=row_FinalGainErr, filterData=filterData, isSplit=False)
+
         itemsTestTime = selectTestTime.iloc[:].str.split(":", expand=True).reset_index(drop=True)
-        # selected_rows = pd.Series(False, index=filterData.index)
-
-        # for start, end in row_ranges:
-        #     selected_rows[start:end] = True
-        #     # selected_rows = selected_rows.append(filterData.loc[start:end+1])
-        # selected = filterData[selected_rows]
-        #
-        # # aaa = selected.iloc[:].str.split('\s+', expand=True)
-        # rowNames = selected.iloc[:].str.split(":").str[0]
-        # rowValues = selected.iloc[:].str.split(":", expand=True)        # .str[1].apply(lambda s: s.split())
-        # rowValues[1] = rowValues[1].apply(lambda s: s.split())
-
-        # result = pd.concat([itemsFront, itemsTestTime])  # itemsBack selectHeader
-        # result.columns = ['keys', 'values']
-        # result.rename(columns={"0": 'keys', "1": 'values'})
-        # csvpath = os.path.join(sourcePath, "Data")
-        # result.to_csv(os.path.join(csvpath, f'WIFI_RX_CALIBRATION_5.csv'), sep=',', encoding='UTF-8')
+        result = pd.concat([itemsFront, itemsBack, itemsTestTime])  # selectHeader
+        result.columns = ['keys', 'values']
+        csvpath = os.path.join(sourcePath, "Data")
+        result.reset_index(drop=True)
+        result.to_csv(os.path.join(csvpath, f'WIFI_RX_CALIBRATION_32.csv'), sep=',', encoding='UTF-8')
     except Exception as ee:
         raise f"make Tx Calif32 excel in valid\n" + str(ee.args)
+
+
+# endregion
