@@ -28,7 +28,7 @@ def convertToDf(*args) -> pd.DataFrame():
                     elements = line.split(delimiter)
                     break
 
-            # Add the elements to the current record
+            # Add the elements to record
             record.extend(elements)
         if record:
             output_rows.append(record)
@@ -186,11 +186,6 @@ def makeWifiTxCalib33(sourcePath):
     dfsVerfTXPow = pd.DataFrame()
     filepath = os.path.join(sourcePath, f'RawData.csv')
     xlsxPath = os.path.join(os.path.join(sourcePath, "Data"), f'{excel_file}')
-    # wifiTxCalif=pd.DataFrame(WifiTxCALIBRATION)
-    # def extract_first_literal(string):
-    #     return string.strip('[]').split('\t')
-    # # wifiTxCalif.columns
-    # data = CalibrationTXPower.apply(lambda s: "\t".join(s.strip('[]').split()))
     try:
         df = pd.read_csv(filepath, header=0, sep=',', encoding='UTF-8')
         row33 = df.loc[33].transpose().dropna().reset_index(drop=True)
@@ -304,12 +299,6 @@ def selectRow(rowRange: list, filterData, isSplit: bool):
 
         result[1].loc[12] = result[1].loc[last_row_range[0]:].agg(lambda x: x.tolist())
         result = result.loc[[0, 4, 8, 12]].reset_index(drop=True)
-
-        # result[1].loc[0] = result[1].loc[1:3].agg(lambda x: x.tolist())
-        # result[1].loc[4] = result[1].loc[5:7].agg(lambda x: x.tolist())
-        # result[1].loc[8] = result[1].loc[9:11].agg(lambda x: x.tolist())
-        # result[1].loc[12] = result[1].loc[12:].agg(lambda x: x.tolist())
-
         result = result.reset_index(drop=True)
         return result
 
