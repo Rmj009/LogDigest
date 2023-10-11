@@ -71,14 +71,10 @@ def makeTxTable(sourcePath):
     TxDf['TxPower'] = TxDf['TxPower'].str.split("Tx Power: ").str[1]
     TxDf['Power'] = TxDf['Power'].str.split("Power             ").str[1]
     # TxDf['MaskMargin'] = TxDf['MaskMargin']
-    TxDf['Freq1'] = TxDf['Freq1'].str.split("Frequency          ").str[1]
-    TxDf['Freq2'] = TxDf['Freq2'].str.split("Frequency          ").str[1]
-    TxDf['Freq3'] = TxDf['Freq3'].str.split("Frequency          ").str[1]
-    TxDf['Freq4'] = TxDf['Freq4'].str.split("Frequency          ").str[1]
-    TxDf['Freq5'] = TxDf['Freq5'].str.split("Frequency          ").str[1]
-    TxDf['Freq6'] = TxDf['Freq6'].str.split("Frequency          ").str[1]
-    TxDf['Freq7'] = TxDf['Freq7'].str.split("Frequency          ").str[1]
-    TxDf['Freq8'] = TxDf['Freq8'].str.split("Frequency          ").str[1]
+    for i in range(1, 9):
+        column_name = f'Freq{i}'
+        TxDf[column_name] = TxDf[column_name].str.split("Frequency          ").str[1]
+
     TxDf['EVM'] = TxDf['EVM'].str.split("EVM          ").str[1]
     TxDf['FreqErr'] = TxDf['FreqErr'].str.split("Freq Error          ").str[1]
     TxDf['SpectrumMask'] = TxDf['SpectrumMask'].str.split("Spectrum Mask   ").str[1]
