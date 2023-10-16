@@ -50,38 +50,42 @@ BeamForm    --->    ( 105 ~ 109 ) makeBeamFormTable
 def makeTxTable(sourcePath):
     filepath = os.path.join(sourcePath, f'RawData.csv')
     df = pd.read_csv(filepath, header=0, sep=',', encoding='UTF-8')
-    subset1 = df.loc[7:14]
-    subset2 = df.loc[34:65]
-    Tx_rows = pd.concat([subset1, subset2])
-    # Tx_rows = df.loc[7:14].append(df.loc[34:65])
-    Tx_rows = Tx_rows.reset_index(drop=True)
-    columnNames = {"0": 'TestItem', "1": 'Frequency', "2": 'DataRate', "3": 'Bandwidth', "4": 'Antenna', "5": 'TxPower',
-                   "6": 'Power',
-                   "7": 'MaskMargin', "8": 'Freq1', "9": 'Freq2', "10": 'Freq3', "11": 'Freq4', "12": 'Freq5',
-                   "13": 'Freq6',
-                   "14": 'Freq7', "15": 'Freq8', "16": 'EVM', "17": 'FreqErr', "18": 'SpectrumMask', "19": 'TestTime'}
-    Tx_rows = Tx_rows.rename(columns=columnNames)
-    TxDf = Tx_rows.iloc[:, 0:21]
-    # TxTable = pd.DataFrame()
-    # TxDf['TestItem'] = TxDf['TestItem']
-    TxDf['Frequency'] = TxDf['Frequency'].str.split("Frequency: ").str[1]
-    TxDf['DataRate'] = TxDf['DataRate'].str.split("Data Rate: ").str[1]
-    TxDf['Bandwidth'] = TxDf['Bandwidth'].str.split("Bandwidth: BW-").str[1]
-    TxDf['Antenna'] = TxDf['Antenna'].str.split("Antenna: ANT_").str[1]
-    TxDf['TxPower'] = TxDf['TxPower'].str.split("Tx Power: ").str[1]
-    TxDf['Power'] = TxDf['Power'].str.split("Power             ").str[1]
-    # TxDf['MaskMargin'] = TxDf['MaskMargin']
-    for i in range(1, 9):
-        column_name = f'Freq{i}'
-        TxDf[column_name] = TxDf[column_name].str.split("Frequency          ").str[1]
+    try:
+        # todo: more general way
+        subset1 = df.loc[7:14]
+        subset2 = df.loc[34:65]
+        Tx_rows = pd.concat([subset1, subset2])
+        # Tx_rows = df.loc[7:14].append(df.loc[34:65])
+        Tx_rows = Tx_rows.reset_index(drop=True)
+        columnNames = {"0": 'TestItem', "1": 'Frequency', "2": 'DataRate', "3": 'Bandwidth', "4": 'Antenna', "5": 'TxPower',
+                       "6": 'Power',
+                       "7": 'MaskMargin', "8": 'Freq1', "9": 'Freq2', "10": 'Freq3', "11": 'Freq4', "12": 'Freq5',
+                       "13": 'Freq6',
+                       "14": 'Freq7', "15": 'Freq8', "16": 'EVM', "17": 'FreqErr', "18": 'SpectrumMask', "19": 'TestTime'}
+        Tx_rows = Tx_rows.rename(columns=columnNames)
+        TxDf = Tx_rows.iloc[:, 0:21]
+        # TxTable = pd.DataFrame()
+        # TxDf['TestItem'] = TxDf['TestItem']
+        TxDf['Frequency'] = TxDf['Frequency'].str.split("Frequency: ").str[1]
+        TxDf['DataRate'] = TxDf['DataRate'].str.split("Data Rate: ").str[1]
+        TxDf['Bandwidth'] = TxDf['Bandwidth'].str.split("Bandwidth: BW-").str[1]
+        TxDf['Antenna'] = TxDf['Antenna'].str.split("Antenna: ANT_").str[1]
+        TxDf['TxPower'] = TxDf['TxPower'].str.split("Tx Power: ").str[1]
+        TxDf['Power'] = TxDf['Power'].str.split("Power             ").str[1]
+        # TxDf['MaskMargin'] = TxDf['MaskMargin']
+        for i in range(1, 9):
+            column_name = f'Freq{i}'
+            TxDf[column_name] = TxDf[column_name].str.split("Frequency          ").str[1]
 
-    TxDf['EVM'] = TxDf['EVM'].str.split("EVM          ").str[1]
-    TxDf['FreqErr'] = TxDf['FreqErr'].str.split("Freq Error          ").str[1]
-    TxDf['SpectrumMask'] = TxDf['SpectrumMask'].str.split("Spectrum Mask   ").str[1]
-    TxDf['TestTime'] = TxDf['TestTime'].str.split("Test time: ").str[1]
-    # TxDf.head()
-    csvpath = os.path.join(sourcePath, "Data")
-    TxDf.to_csv(os.path.join(csvpath, f'TxDF.csv'), sep=',', encoding='UTF-8')
+        TxDf['EVM'] = TxDf['EVM'].str.split("EVM          ").str[1]
+        TxDf['FreqErr'] = TxDf['FreqErr'].str.split("Freq Error          ").str[1]
+        TxDf['SpectrumMask'] = TxDf['SpectrumMask'].str.split("Spectrum Mask   ").str[1]
+        TxDf['TestTime'] = TxDf['TestTime'].str.split("Test time: ").str[1]
+        # TxDf.head()
+        csvpath = os.path.join(sourcePath, "Data")
+        TxDf.to_csv(os.path.join(csvpath, f'TxDF.csv'), sep=',', encoding='UTF-8')
+    except Exception as ex:
+        yield ex
 
 
 def makeRxTable(sourcePath):
