@@ -126,35 +126,54 @@ class GUIApp:
     #     except Exception as eee:
     #         raise f'remove ERR' + str(eee.args)
 
+    # def ReadRawData(self, *args):
+    #     try:
+    #         # ---------------- Tx, Rx, BeamFrom Tables ----------------------
+    #         if args[0] == "Rx":
+    #             utils.makeRxTable(self.path)
+    #             self.info_manager.update_info("Succeed", f'Save WifiRx Table in the Data Folder')
+    #         elif args[0] == "Tx":
+    #             utils.makeTxTable(self.path)
+    #             self.info_manager.update_info("Succeed", f'Save WifiTx Table in the Data Folder')
+    #         elif args[0] == "BeamForm":
+    #             utils.makeBeamFormTable(self.path)
+    #             self.info_manager.update_info("Succeed", f'Save Wifi_BeamForm Table in the Data Folder')
+    #         # -------------------Tx Calibration-------------------------
+    #         elif args[0] == "TxCalf33":
+    #             utils.makeWifiTxCalib33(self.path)
+    #             self.info_manager.update_info("Succeed", f'Save Wifi Tx Calib33 Table in the Data Folder')
+    #         elif args[0] == "TxCalf6":
+    #             utils.makeWifiTxCalib6(self.path)
+    #             self.info_manager.update_info("Succeed", f'Save Wifi Tx Calib6 Table in the Data Folder')
+    #         # -------------------Rx Calibration-------------------------
+    #         elif args[0] == "RxCalf32":
+    #             utils.makeWifiRxCalib32(self.path)
+    #             self.info_manager.update_info("Succeed", f'Save Wifi Tx RxCalf32 Table in the Data Folder')
+    #         elif args[0] == "RxCalf5":
+    #             utils.makeWifiRxCalib5(self.path)
+    #             self.info_manager.update_info("Succeed", f'Save Wifi Tx RxCalf5 Table in the Data Folder')
+    #     except Exception as ex:
+    #         messagebox.showerror("Loading Err!", "File not exist or Invalid File")
+    #         raise "open txt failure => " + str(ex.args)
+
     def ReadRawData(self, *args):
-        try:
-            # ---------------- Tx, Rx, BeamFrom Tables ----------------------
-            if args[0] == "Rx":
-                utils.makeRxTable(self.path)
-                self.info_manager.update_info("Succeed", f'Save WifiRx Table in the Data Folder')
-            elif args[0] == "Tx":
-                utils.makeTxTable(self.path)
-                self.info_manager.update_info("Succeed", f'Save WifiTx Table in the Data Folder')
-            elif args[0] == "BeamForm":
-                utils.makeBeamFormTable(self.path)
-                self.info_manager.update_info("Succeed", f'Save Wifi_BeamForm Table in the Data Folder')
-            # -------------------Tx Calibration-------------------------
-            elif args[0] == "TxCalf33":
-                utils.makeWifiTxCalib33(self.path)
-                self.info_manager.update_info("Succeed", f'Save Wifi Tx Calib33 Table in the Data Folder')
-            elif args[0] == "TxCalf6":
-                utils.makeWifiTxCalib6(self.path)
-                self.info_manager.update_info("Succeed", f'Save Wifi Tx Calib6 Table in the Data Folder')
-            # -------------------Rx Calibration-------------------------
-            elif args[0] == "RxCalf32":
-                utils.makeWifiRxCalib32(self.path)
-                self.info_manager.update_info("Succeed", f'Save Wifi Tx RxCalf32 Table in the Data Folder')
-            elif args[0] == "RxCalf5":
-                utils.makeWifiRxCalib5(self.path)
-                self.info_manager.update_info("Succeed", f'Save Wifi Tx RxCalf5 Table in the Data Folder')
-        except Exception as ex:
+        table_mapping = {
+            "Rx": {"func": utils.makeRxTable, "message": "WifiRx"},
+            "Tx": {"func": utils.makeTxTable, "message": "WifiTx"},
+            "BeamForm": {"func": utils.makeBeamFormTable, "message": "Wifi_BeamForm"},
+            "TxCalf33": {"func": utils.makeWifiTxCalib33, "message": "Wifi Tx Calib33"},
+            "TxCalf6": {"func": utils.makeWifiTxCalib6, "message": "Wifi Tx Calib6"},
+            "RxCalf32": {"func": utils.makeWifiRxCalib32, "message": "Wifi Tx RxCalf32"},
+            "RxCalf5": {"func": utils.makeWifiRxCalib5, "message": "Wifi Tx RxCalf5"}
+        }
+
+        if args[0] in table_mapping:
+            table_info = table_mapping[args[0]]
+            table_info["func"](self.path)
+            self.info_manager.update_info("Succeed", f'Save {table_info["message"]} Table in the Data Folder')
+        else:
             messagebox.showerror("Loading Err!", "File not exist or Invalid File")
-            raise "open txt failure => " + str(ex.args)
+            raise ValueError(f"Invalid argument: {args[0]}")
 
     def run(self):
         self.root.protocol("WM_DELETE_WINDOW", self.on_exit)
