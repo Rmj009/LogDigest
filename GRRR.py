@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.stats import f
 
+
 def calc_grr(*args):
     # A_op = np.array(self.data)
     # B_op = np.array(self.data)
@@ -136,17 +137,17 @@ def rawData_handling(*args):
         print("MS_2: ", MS_2)
         MS_3 = SS_Repeatability / df_repeat
         print("MS_3: ", MS_3)
-        F1 = np.nan if np.isnan(MS_0 / MS_2) else MS_0 / MS_2
+        # F1 = np.nan if np.isnan(MS_0 / MS_2) else MS_0 / MS_2
         # print("F1: ", F1)
-        F2 = np.nan if np.isnan(MS_1 / MS_2) else MS_1 / MS_2
-        print("F2: ", F2)
+        # F2 = np.nan if np.isnan(MS_1 / MS_2) else MS_1 / MS_2
+        # print("F2: ", F2)
         F3 = np.nan if np.isnan(MS_2 / MS_3) else MS_2 / MS_3
         print("F3: ", F3)
-        # p_value1 = f.pdf(F1, df_dut, df_repeat)
-        # p_value2 = f.pdf(F2, df_op, df_repeat)
+        # p_value1 = f.cdf(F1, df_dut, df_repeat)
+        # p_value2 = f.cdf(F2, df_op, df_repeat)
         p_value3 = f.pdf(F3, df_dut_op, df_repeat)
         print("p_value3: ", p_value3)
-
+        # https: // www.geeksforgeeks.org / how - to - perform - an - f - test - in -python /
         # Table 2 without interaction as if p_value3 >= 0.05
         MS_0_t2 = np.mean(SS_DUT) / df_dut
         print("MS_0_t2: ", MS_0_t2)
@@ -169,15 +170,32 @@ def rawData_handling(*args):
         isGreater = MS_2 - MS_3 > 0
         print("isGreater: ", isGreater)
 
+        if MS_1_t2 > MS_2_t2:
+            ans1 = (MS_1_t2 - MS_2_t2) / (arr_3d.shape[2] * arr_3d.shape[3])
+        else:
+            ans1 = 0
+        if MS_1 > MS_2:
+            ans2 = (MS_1 - MS_2) / (arr_3d.shape[2] * arr_3d.shape[3])
+        else:
+            ans2 = 0
+        if p_value3 > 0.05:
+            print("p_value greater than alpha 0.05")
+            varComp_op = ans1
+            print("varComp_op: ", varComp_op)
+        else:
+            varComp_op = ans2
+            print("varComp_op: ", varComp_op)
+
+        if p_value3 > 0.05:
+            print("p_value greater than alpha 0.05")
+            varComp_op_dut = 0
+            print("varComp_op_dut: ", varComp_op_dut)
+        else:
+            varComp_op_dut = (MS_3 - MS_2) / arr_3d.shape[3]
+            print("varComp_op_dut: ", varComp_op_dut)
         # Reproduability = 0 if F3 > 0.05 else MS_3
-        # varComp_op =
-        # varComp_op_dut = 0 if F3 > 0.05 else MS_3
         # varComp_part_to_part =
         # varComp_total_varation =
-
-
-
-
 
     except RuntimeWarning as runex:
         raise "divide failure => " + str(runex.args)
