@@ -165,9 +165,6 @@ def rawData_handling(*args):
         print("p_value2_t2: ", p_value2_t2)
 
         # -------------- GRR_Variance --------------
-        Repeatability = 0 if F3 > 0.05 else MS_3
-        print("Repeatability: ", Repeatability)
-        isGreater = MS_2 - MS_3 > 0
         print("isGreater: ", isGreater)
 
         if MS_1_t2 > MS_2_t2:
@@ -193,9 +190,29 @@ def rawData_handling(*args):
         else:
             varComp_op_dut = (MS_3 - MS_2) / arr_3d.shape[3]
             print("varComp_op_dut: ", varComp_op_dut)
-        # Reproduability = 0 if F3 > 0.05 else MS_3
-        # varComp_part_to_part =
-        # varComp_total_varation =
+
+        if p_value3 > 0.05:
+            print("p_value greater than alpha 0.05")
+            if MS_0_t2 > MS_1_t2:
+                varComp_part_to_part = (MS_0_t2 - MS_1_t2) / (3 * 3)  # ???????
+            else:
+                varComp_part_to_part = 0
+                print("varComp_part_to_part: ", varComp_part_to_part)
+        else:
+            if MS_0 > MS_3:
+                varComp_part_to_part = (MS_0 - MS_3) / (3 * 3)  # ???????
+            else:
+                varComp_part_to_part = 0
+                print("varComp_part_to_part: ", varComp_part_to_part)
+
+        varComp_Reproduability = varComp_op if F3 > 0.05 else (varComp_op + varComp_op_dut)
+        varComp_total_RageRR = varComp_Reproduability + varComp_Repeatability
+        varComp_total_varation = varComp_total_RageRR + varComp_part_to_part
+        total_GageRR = math.sqrt(varComp_Reproduability ** 2 + varComp_Repeatability ** 2)
+        print("varComp_Reproduability: ", varComp_Reproduability)
+        print("varComp_total_RageRR: ", varComp_total_RageRR)
+        print("varComp_total_varation: ", varComp_total_varation)
+        print("total_GageRR: ", total_GageRR)
 
     except RuntimeWarning as runex:
         raise "divide failure => " + str(runex.args)
