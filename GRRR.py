@@ -137,18 +137,18 @@ def rawData_handling(*args):
         print("MS_2: ", MS_2)
         MS_3 = SS_Repeatability / df_repeat
         print("MS_3: ", MS_3)
-        # F1 = np.nan if np.isnan(MS_0 / MS_2) else MS_0 / MS_2
-        # print("F1: ", F1)
-        # F2 = np.nan if np.isnan(MS_1 / MS_2) else MS_1 / MS_2
-        # print("F2: ", F2)
+        F1 = np.nan if np.isnan(MS_0 / MS_2) else MS_0 / MS_2
+        print("F1: ", F1)
+        F2 = np.nan if np.isnan(MS_1 / MS_2) else MS_1 / MS_2
+        print("F2: ", F2)
         F3 = np.nan if np.isnan(MS_2 / MS_3) else MS_2 / MS_3
         print("F3: ", F3)
-        # p_value1 = f.cdf(F1, df_dut, df_repeat)
-        # p_value2 = f.cdf(F2, df_op, df_repeat)
+        p_value1 = f.cdf(F1, df_dut, df_repeat)
+        p_value2 = f.cdf(F2, df_op, df_repeat)
         p_value3 = f.pdf(F3, df_dut_op, df_repeat)
         print("p_value3: ", p_value3)
-        # https: // www.geeksforgeeks.org / how - to - perform - an - f - test - in -python /
-        # Table 2 without interaction as if p_value3 >= 0.05
+        ## https: // www.geeksforgeeks.org / how - to - perform - an - f - test - in -python /
+        ## Table 2 without interaction as if p_value3 >= 0.05
         MS_0_t2 = np.mean(SS_DUT) / df_dut
         print("MS_0_t2: ", MS_0_t2)
         MS_1_t2 = SS_OP / df_op
@@ -165,6 +165,9 @@ def rawData_handling(*args):
         print("p_value2_t2: ", p_value2_t2)
 
         # -------------- GRR_Variance --------------
+        varComp_Repeatability = 0 if F3 > 0.05 else MS_3
+        print("Repeatability: ", varComp_Repeatability)
+        isGreater = MS_2 - MS_3 > 0
         print("isGreater: ", isGreater)
 
         if MS_1_t2 > MS_2_t2:
@@ -191,34 +194,57 @@ def rawData_handling(*args):
             varComp_op_dut = (MS_3 - MS_2) / arr_3d.shape[3]
             print("varComp_op_dut: ", varComp_op_dut)
 
+
         if p_value3 > 0.05:
             print("p_value greater than alpha 0.05")
             if MS_0_t2 > MS_1_t2:
-                varComp_part_to_part = (MS_0_t2 - MS_1_t2) / (3 * 3)  # ???????
+              varComp_part_to_part = (MS_0_t2 - MS_1_t2) / (3 * 3) #???????
             else:
-                varComp_part_to_part = 0
-                print("varComp_part_to_part: ", varComp_part_to_part)
+              varComp_part_to_part = 0
+              print("varComp_part_to_part: ", varComp_part_to_part)
         else:
             if MS_0 > MS_3:
-                varComp_part_to_part = (MS_0 - MS_3) / (3 * 3)  # ???????
+              varComp_part_to_part = (MS_0 - MS_3) / (3 * 3) #???????
             else:
-                varComp_part_to_part = 0
-                print("varComp_part_to_part: ", varComp_part_to_part)
+              varComp_part_to_part = 0
+              print("varComp_part_to_part: ", varComp_part_to_part)
 
         varComp_Reproduability = varComp_op if F3 > 0.05 else (varComp_op + varComp_op_dut)
         varComp_total_RageRR = varComp_Reproduability + varComp_Repeatability
         varComp_total_varation = varComp_total_RageRR + varComp_part_to_part
-        total_GageRR = math.sqrt(varComp_Reproduability ** 2 + varComp_Repeatability ** 2)
+        total_GageRR = (varComp_Reproduability ** 2 + varComp_Repeatability ** 2) ** (1/2)
         print("varComp_Reproduability: ", varComp_Reproduability)
         print("varComp_total_RageRR: ", varComp_total_RageRR)
         print("varComp_total_varation: ", varComp_total_varation)
         print("total_GageRR: ", total_GageRR)
+
+
 
     except RuntimeWarning as runex:
         raise "divide failure => " + str(runex.args)
     except Exception as ex:
         print(f"calc" + str(ex.args))
         raise "calc failure => " + str(ex.args)
+
+
+def grr_evaluation(*args, **kwagrs):
+  # -------------- GRR - Gage Evaluation --------------
+  grr_result_lst = []
+  usl = kwargs.usl
+  lsl = kwargs.lsl
+  range = usl - lsl
+
+  try:
+    grr_result_lst.append(args)
+    grr_study_Var = 6 * grr_result_lst
+    grr_percent_study_var = grr_study_Var / grr_study_Var[-1] * 100
+    grr_tolerance = grr_study_Var / range * 100
+
+
+  except Exception as e:
+    print(" -------------- Gage Evaluation -------------- \r\n" + e.args)
+    raise str(e.args)
+
 
 
 class GRR:
