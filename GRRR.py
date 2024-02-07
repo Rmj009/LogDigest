@@ -178,47 +178,42 @@ def rawData_handling(*args):
             ans2 = (MS_1 - MS_2) / (arr_3d.shape[2] * arr_3d.shape[3])
         else:
             ans2 = 0
+
         if p_value3 > 0.05:
             print("p_value greater than alpha 0.05")
             varComp_op = ans1
             print("varComp_op: ", varComp_op)
+            # ------------
+            varComp_op_dut = 0
+            print("varComp_op_dut: ", varComp_op_dut)
+            # ------------
+            if MS_0_t2 > MS_1_t2:
+                varComp_part_to_part = (MS_0_t2 - MS_1_t2) / (3 * 3)  # ???????
+            else:
+                varComp_part_to_part = 0
+                print("varComp_part_to_part: ", varComp_part_to_part)
+
         else:
             varComp_op = ans2
             print("varComp_op: ", varComp_op)
-
-        if p_value3 > 0.05:
-            print("p_value greater than alpha 0.05")
-            varComp_op_dut = 0
-            print("varComp_op_dut: ", varComp_op_dut)
-        else:
+            # -----------
             varComp_op_dut = (MS_3 - MS_2) / arr_3d.shape[3]
             print("varComp_op_dut: ", varComp_op_dut)
-
-
-        if p_value3 > 0.05:
-            print("p_value greater than alpha 0.05")
-            if MS_0_t2 > MS_1_t2:
-              varComp_part_to_part = (MS_0_t2 - MS_1_t2) / (3 * 3) #???????
-            else:
-              varComp_part_to_part = 0
-              print("varComp_part_to_part: ", varComp_part_to_part)
-        else:
+            # -----------
             if MS_0 > MS_3:
-              varComp_part_to_part = (MS_0 - MS_3) / (3 * 3) #???????
+                varComp_part_to_part = (MS_0 - MS_3) / (3 * 3)  # ???????
             else:
-              varComp_part_to_part = 0
-              print("varComp_part_to_part: ", varComp_part_to_part)
+                varComp_part_to_part = 0
+                print("varComp_part_to_part: ", varComp_part_to_part)
 
-        varComp_Reproduability = varComp_op if F3 > 0.05 else (varComp_op + varComp_op_dut)
-        varComp_total_RageRR = varComp_Reproduability + varComp_Repeatability
-        varComp_total_varation = varComp_total_RageRR + varComp_part_to_part
-        total_GageRR = (varComp_Reproduability ** 2 + varComp_Repeatability ** 2) ** (1/2)
-        print("varComp_Reproduability: ", varComp_Reproduability)
+        varComp_reproducibility = varComp_op if F3 > 0.05 else (varComp_op + varComp_op_dut)
+        varComp_total_RageRR = varComp_reproducibility + varComp_Repeatability
+        varComp_total_variation = varComp_total_RageRR + varComp_part_to_part
+        total_GageRR = (varComp_reproducibility ** 2 + varComp_Repeatability ** 2) ** (1 / 2)
+        print("varComp_reproducibility: ", varComp_reproducibility)
         print("varComp_total_RageRR: ", varComp_total_RageRR)
-        print("varComp_total_varation: ", varComp_total_varation)
+        print("varComp_total_variation: ", varComp_total_variation)
         print("total_GageRR: ", total_GageRR)
-
-
 
     except RuntimeWarning as runex:
         raise "divide failure => " + str(runex.args)
@@ -228,23 +223,21 @@ def rawData_handling(*args):
 
 
 def grr_evaluation(*args, **kwagrs):
-  # -------------- GRR - Gage Evaluation --------------
-  grr_result_lst = []
-  usl = kwargs.usl
-  lsl = kwargs.lsl
-  range = usl - lsl
+    # -------------- GRR - Gage Evaluation --------------
+    grr_result_lst = []
+    usl = kwargs.usl
+    lsl = kwargs.lsl
+    range = usl - lsl
 
-  try:
-    grr_result_lst.append(args)
-    grr_study_Var = 6 * grr_result_lst
-    grr_percent_study_var = grr_study_Var / grr_study_Var[-1] * 100
-    grr_tolerance = grr_study_Var / range * 100
+    try:
+        grr_result_lst.append(args)
+        grr_study_Var = 6 * grr_result_lst
+        grr_percent_study_var = grr_study_Var / grr_study_Var[-1] * 100
+        grr_tolerance = grr_study_Var / range * 100
 
-
-  except Exception as e:
-    print(" -------------- Gage Evaluation -------------- \r\n" + e.args)
-    raise str(e.args)
-
+    except Exception as e:
+        print(" -------------- Gage Evaluation -------------- \r\n" + e.args)
+        raise str(e.args)
 
 
 class GRR:
