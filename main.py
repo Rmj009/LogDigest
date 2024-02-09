@@ -1,4 +1,6 @@
 from tkinter import filedialog, messagebox
+
+from Gage import Gage
 from utils import utils
 import tkinter as tk
 # import glob
@@ -193,7 +195,18 @@ class GUIApp:
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    app = GUIApp()
-    app.run()
+    A_op = [[1, 2, 3] for _ in range(10)]
+    B_op = [[4, 5, 6] for _ in range(10)]
+    C_op = [[7, 8, 9] for _ in range(10)]
+    DUT_1 = [A_op, B_op, C_op]
+    USL = 5
+    LSL = -5
+    range_spec = USL - LSL
+    # print(DUT_1)
+    grr_instance = Gage(DUT_1, LSL, USL)
+    grr_instance.fmt_println()
+    grr_instance.rawData_handling(range_spec, DUT_1)
+    # app = GUIApp()
+    # app.run()
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
