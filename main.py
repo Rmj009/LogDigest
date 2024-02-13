@@ -202,11 +202,10 @@ if __name__ == '__main__':
     USL = 5
     LSL = -5
     range_spec = USL - LSL
-    # print(DUT_1)
-    grr_instance = Gage(DUT_1, LSL, USL)
-    grr_instance.fmt_println()
-    grr_instance.rawData_handling(range_spec, DUT_1)
-    # app = GUIApp()
-    # app.run()
+    # grr_instance = Gage(DUT_1, LSL, USL)
+    # grr_instance.fmt_println()
+    # grr_instance.rawData_handling(range_spec, DUT_1)
+    app = GUIApp()
+    app.run()
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
