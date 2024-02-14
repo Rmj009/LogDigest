@@ -33,10 +33,13 @@ class InfoManager:
         self.txt_widget.config(state=tk.DISABLED)
 
 
-class GUIApp:
+class GUIApp(tk.Tk):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+
+        # super().__init__()
+        tk.Tk.__init__(self, *args, **kwargs)
+
         self.root = tk.Tk()
         self.windows = []
         self.root.geometry("750x600")
@@ -64,13 +67,17 @@ class GUIApp:
         self.btnReadWifiBeam.pack(side='top', padx=10, pady=5, anchor="w")
         # self.btnClean = tk.Button(self.frame, text="Clean Data", command=lambda: self.ReadRawData(""))
         # self.btnClean.pack(side='top', padx=10, pady=5)
-        self.btnReadTxCalf33 = tk.Button(self.frame, text="Yield Tx Calibration 33", command=lambda: self.ReadRawData("TxCalf33"))
+        self.btnReadTxCalf33 = tk.Button(self.frame, text="Yield Tx Calibration 33",
+                                         command=lambda: self.ReadRawData("TxCalf33"))
         self.btnReadTxCalf33.pack(side='top', padx=10, pady=5, anchor="w")
-        self.btnReadTxCalf6 = tk.Button(self.frame, text="Yield Tx Calibration 6", command=lambda: self.ReadRawData("TxCalf6"))
+        self.btnReadTxCalf6 = tk.Button(self.frame, text="Yield Tx Calibration 6",
+                                        command=lambda: self.ReadRawData("TxCalf6"))
         self.btnReadTxCalf6.pack(side='top', padx=10, pady=5, anchor="w")
-        self.btnReadRxCalf32 = tk.Button(self.frame, text="Yield Rx Calibration 32", command=lambda: self.ReadRawData("RxCalf32"))
+        self.btnReadRxCalf32 = tk.Button(self.frame, text="Yield Rx Calibration 32",
+                                         command=lambda: self.ReadRawData("RxCalf32"))
         self.btnReadRxCalf32.pack(side='top', padx=10, pady=5, anchor="w")
-        self.btnReadRxCalf5 = tk.Button(self.frame, text="Yield Rx Calibration 5", command=lambda: self.ReadRawData("RxCalf5"))
+        self.btnReadRxCalf5 = tk.Button(self.frame, text="Yield Rx Calibration 5",
+                                        command=lambda: self.ReadRawData("RxCalf5"))
         self.btnReadRxCalf5.pack(side='top', padx=10, pady=5, anchor="w")
         self.btnExit = tk.Button(self.frame, text="Close Window", command=lambda: self.root.quit())
         self.btnExit.pack(side='bottom', padx=10, pady=5, anchor="sw")
@@ -87,7 +94,23 @@ class GUIApp:
         self.txt.config(state=tk.DISABLED, spacing1=10, spacing2=5, padx=10, pady=10)
         self.path = os.path.dirname(os.path.abspath('__file__'))
         self.create_dataDir()
+        container = tk.Frame(self)
+        container.pack(side="top", fill="both", expand=True)
+        container.grid_rowconfigure(0, weight=1)
+        container.grid_columnconfigure(0, weight=1)
+        self.frames = {}
+
+        for F in (StartPage, PageOne, PageTwo):
+            frame = F(container, self)
+            self.frames[F] = frame
+            frame.grid(row=0, column=0, sticky="nsew")
+
+        self.show_frame(StartPage)
         self.info_manager = InfoManager(self.txt)
+
+    def show_frame(self, cont):
+        frame = self.frames[cont]
+        frame.tkraise()
 
     def chooseFile(self):
         filePath = filedialog.askopenfilename()
@@ -191,6 +214,42 @@ class GUIApp:
     #     files = glob.glob(f'{path}/*')
     #     for f in files:
     #         os.remove(f)
+
+
+class StartPage(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        label = tk.Label(self, text="This is the Start Page")
+        label.pack(side="top", fill="x", pady=10)
+        button1 = tk.Button(self, text="Go to Page One",
+                            command=lambda: controller.show_frame(PageOne))
+        button1.pack()
+
+
+class PageOne(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        label = tk.Label(self, text="This is Page One")
+        label.pack(side="top", fill="x", pady=10)
+        button1 = tk.Button(self, text="Go to Start Page",
+                            command=lambda: controller.show_frame(StartPage))
+        button1.pack()
+        button2 = tk.Button(self, text="Go to Page Two",
+                            command=lambda: controller.show_frame(PageTwo))
+        button2.pack()
+
+
+class PageTwo(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        label = tk.Label(self, text="This is Page Two")
+        label.pack(side="top", fill="x", pady=10)
+        button1 = tk.Button(self, text="Go to Start Page",
+                            command=lambda: controller.show_frame(StartPage))
+        button1.pack()
+        button2 = tk.Button(self, text="Go to Page One",
+                            command=lambda: controller.show_frame(PageOne))
+        button2.pack()
 
 
 # Press the green button in the gutter to run the script.
