@@ -11,7 +11,7 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 import AseTreeMap
-import DestroyData
+# import DestroyData
 from mainViz import RfVisualize
 from DigestData import PreManifest, DataUtils
 from abc import ABCMeta, abstractmethod
@@ -687,16 +687,16 @@ class SimDcApp(AbcAseAz):
                 dfs = DataUtils.DigestAskOpenFileName(sourcePath, 1)
                 return dfs
 
-    def removeDir(self):
-        self.info_manager.update_info(" Clear Data in directory ",
-                                      "1. Data \n 2.DataPolish \n 3.DataSketch \n 4.DataRx ")
-        try:
-            for path in [self.DirDataSketch, self.DirDataPolish, self.DirDataRx, self.DirData]:
-                DestroyData.DestroyDirectory(path)
-        except FileExistsError as fileErr:
-            raise "remove Err === " + str(fileErr.args)
-        except Exception as eee:
-            raise f'remove ERR' + str(eee.args)
+    # def removeDir(self):
+    #     self.info_manager.update_info(" Clear Data in directory ",
+    #                                   "1. Data \n 2.DataPolish \n 3.DataSketch \n 4.DataRx ")
+    #     try:
+    #         for path in [self.DirDataSketch, self.DirDataPolish, self.DirDataRx, self.DirData]:
+    #             DestroyData.DestroyDirectory(path)
+    #     except FileExistsError as fileErr:
+    #         raise "remove Err === " + str(fileErr.args)
+    #     except Exception as eee:
+    #         raise f'remove ERR' + str(eee.args)
 
     def run(self):
         self.root.protocol("WM_DELETE_WINDOW", self.on_exit)
