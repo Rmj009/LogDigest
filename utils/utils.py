@@ -3,11 +3,12 @@ import numpy as np
 import pandas as pd
 import csv
 
+from Gage import Gage
+
 
 # import openpyxl
 
 def grr_calculation(df: pd.DataFrame(), col_nth: int) -> str:
-    grr_value = "none"
     """
     loop columns to calc 
     """
@@ -16,26 +17,35 @@ def grr_calculation(df: pd.DataFrame(), col_nth: int) -> str:
         df_testItem = df_testItem.T
         df_testItem.index = ['A', 'A', 'A', 'B', 'B', 'B', 'C', 'C', 'C']
         df_testItem.columns = [i for i in range(10)]
+        grr_data = df_testItem.values.reshape(3, 10, 3)
+        grr_instance = Gage(grr_data, -5, 5)
+        grr_value = grr_instance.rawData_handling(grr_data)
     except Exception as e:
         raise "grr_calculation" + str(e.args)
     return grr_value
 
 
-def grr_cooking():
+def grr_cooking(filepath, grr_spec):
     """
     split dataframe into A,B,C blocks
     :return:
     """
-    try:
-        pass
-    except Exception as e:
-        raise "grr_cooking" + str(e.args)
-    return
-
-
-def grr_data_digest(filepath) -> str:
+    grr_lst = []
+    print("grr_spec", grr_spec)
     try:
         df = pd.read_csv(filepath, skiprows=4, header=None)
+        for i in range(df.shape[1] - 2):
+            grr_lst.append(grr_calculation(df, i + 2))
+        result = np.array(grr_lst)
+    except Exception as e:
+        raise "grr_cooking" + str(e.args)
+    return result
+
+
+def grr_data_digest(filepath) -> np.array:
+    try:
+        df = pd.read_csv(filepath, skiprows=4, header=None)
+        df_spec_array = df.iloc[[1, 2]].values
         # df_testItem.reset_index(drop=True, inplace=True)
 
         print("Columns in the DataFrame:")
@@ -48,7 +58,7 @@ def grr_data_digest(filepath) -> str:
                 print(value)
     except Exception as e:
         raise "csv data under 90" + str(e.args)
-    return str(df.shape)
+    return df_spec_array  # str(df.shape)
 
 
 def convertToDf(*args) -> pd.DataFrame():

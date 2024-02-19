@@ -1,4 +1,7 @@
 from tkinter import filedialog, messagebox
+
+import numpy as np
+
 # from DigestData import PreManifest, DataUtils
 # from Gage import Gage
 from utils import utils
@@ -104,6 +107,7 @@ class StartPage(tk.Tk):
         # self.show_frame(StartPage)
         self.info_manager = InfoManager(self.txt)
         self.grr_filePath: str = ""
+        self.grr_spec = np.array()
 
         # label = tk.Label(self, text="This is the Start Page")
         # label.pack(side="top", fill="x", pady=10)
@@ -128,8 +132,7 @@ class StartPage(tk.Tk):
 
     def calcu_grr(self):
         try:
-
-            utils.grr_data_digest(self.grr_filePath)
+            utils.grr_cooking(self.grr_filePath, self.grr_spec)
         except Exception as e:
             raise "calculate GRR err >>> " + str(e.args)
 
@@ -137,8 +140,8 @@ class StartPage(tk.Tk):
         self.grr_filePath = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
         if self.grr_filePath:
             self.info_manager.update_info("Read csv OK", f'File Path {self.grr_filePath}')
-            csvShape = utils.grr_data_digest(self.grr_filePath)
-            self.info_manager.update_info("csv dimension", f'{csvShape}')
+            self.grr_spec = utils.grr_data_digest(self.grr_filePath)
+            # self.info_manager.update_info("csv dimension", f'{csvShape}')
         else:
             messagebox.showinfo("File format NG")
 

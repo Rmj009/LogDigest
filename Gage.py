@@ -1,6 +1,6 @@
 import datetime as dt
 import numpy as np
-# from scipy.stats import f
+from scipy.stats import f
 
 
 class Gage:
@@ -123,10 +123,9 @@ class Gage:
             F1 = np.nan if np.isnan(MS_0 / MS_2) else MS_0 / MS_2
             F2 = np.nan if np.isnan(MS_1 / MS_2) else MS_1 / MS_2
             F3 = np.nan if np.isnan(MS_2 / MS_3) else MS_2 / MS_3
-            # p_value1 = f.cdf(F1, df_dut, df_repeat)
-            # p_value1 = 1 - f.cdf(F1, df_dut, df_repeat)  # 0.6524410065803709
-            # p_value2 = 1 - f.cdf(F2, df_op, df_repeat)
-            # p_value3 = 1 - f.cdf(F3, df_dut_op, df_repeat)
+            p_value1 = 1 - f.cdf(F1, df_dut, df_repeat)  # 0.6524410065803709
+            p_value2 = 1 - f.cdf(F2, df_op, df_repeat)
+            p_value3 = 1 - f.cdf(F3, df_dut_op, df_repeat)
             ## https: // www.geeksforgeeks.org / how - to - perform - an - f - test - in -python /
             ## Table 2 without interaction as if p_value3 >= 0.05
             MS_0_t2 = np.sum(SS_DUT) / df_dut
@@ -134,27 +133,27 @@ class Gage:
             MS_2_t2 = (SS_DUT_op + SS_Repeatability) / (df_repeat + df_dut_op)
             F1_t2 = np.nan if np.isnan(MS_0_t2 / MS_2_t2) else MS_0_t2 / MS_2_t2
             F2_t2 = np.nan if np.isnan(MS_1_t2 / MS_2_t2) else MS_1_t2 / MS_2_t2
-            # p_value1_t2 = 1 - f.cdf(F1_t2, df_dut, (df_repeat + df_dut_op))
-            # p_value2_t2 = 1 - f.cdf(F2_t2, df_op, (df_repeat + df_dut_op))
-            print("MS_0: ", MS_0)
-            print("MS_1: ", MS_1)
-            print("MS_2: ", MS_2)
-            print("MS_3: ", MS_3)
+            p_value1_t2 = 1 - f.cdf(F1_t2, df_dut, (df_repeat + df_dut_op))
+            p_value2_t2 = 1 - f.cdf(F2_t2, df_op, (df_repeat + df_dut_op))
+            # print("MS_0: ", MS_0)
+            # print("MS_1: ", MS_1)
+            # print("MS_2: ", MS_2)
+            # print("MS_3: ", MS_3)
             print("F1: ", F1)
             print("F2: ", F2)
             print("F3: ", F3)
-            # print("p_value1: ", p_value1)
-            # print("p_value2: ", p_value2)
-            # print("p_value3: ", p_value3)
+            print("p_value1: ", p_value1)
+            print("p_value2: ", p_value2)
+            print("p_value3: ", p_value3)
 
-            print("MS_0_t2: ", MS_0_t2)
-            print("MS_1_t2: ", MS_1_t2)
-            print("MS_2_t2: ", MS_2_t2)
+            # print("MS_0_t2: ", MS_0_t2)
+            # print("MS_1_t2: ", MS_1_t2)
+            # print("MS_2_t2: ", MS_2_t2)
             print("F1_t2: ", F1_t2)
             print("F2_t2: ", F2_t2)
-            # print("p_value1_t2: ", p_value1_t2)
-            # print("p_value2_t2: ", p_value2_t2)
-
+            print("p_value1_t2: ", p_value1_t2)
+            print("p_value2_t2: ", p_value2_t2)
+            print('-----------------------------------------')
             # -------------- GRR_Variance --------------
             varComp_Repeatability = 0 if F3 > 0.05 else MS_3
 
@@ -170,57 +169,58 @@ class Gage:
             else:
                 ans2 = 0
 
-            # if p_value3 > 0.05:
-            #     print("p_value greater than alpha 0.05")
-            #     varComp_op = ans1
-            #     print("varComp_op: ", varComp_op)
-            #     # ------------
-            #     varComp_op_dut = 0
-            #     print("varComp_op_dut: ", varComp_op_dut)
-            #     # ------------
-            #     if MS_0_t2 > MS_1_t2:
-            #         varComp_part_to_part = (MS_0_t2 - MS_2_t2) / (3 * 3)  # ???????
-            #     else:
-            #         varComp_part_to_part = 0
-            #         print("varComp_part_to_part: ", varComp_part_to_part)
-            #
-            # else:
-            #     varComp_op = ans2
-            #     print("varComp_op: ", varComp_op)
-            #     # -----------
-            #     varComp_op_dut = (MS_3 - MS_2) / arr_3d.shape[2]
-            #     print("varComp_op_dut: ", varComp_op_dut)
-            #     # -----------
-            #     if MS_0 > MS_3:
-            #         varComp_part_to_part = (MS_0 - MS_2) / (3 * 3)  # ???????
-            #     else:
-            #         varComp_part_to_part = 0
+            if p_value3 > 0.05:
+                print("p_value greater than alpha 0.05")
+                varComp_op = ans1
+                print("varComp_op: ", varComp_op)
+                # ------------
+                varComp_op_dut = 0
+                print("varComp_op_dut: ", varComp_op_dut)
+                # ------------
+                if MS_0_t2 > MS_1_t2:
+                    varComp_part_to_part = (MS_0_t2 - MS_2_t2) / (3 * 3)  # ???????
+                else:
+                    varComp_part_to_part = 0
+                    print("varComp_part_to_part: ", varComp_part_to_part)
 
-            # varComp_reproducibility = varComp_op if F3 > 0.05 else (varComp_op + varComp_op_dut)
-            # varComp_total_RageRR = varComp_reproducibility + varComp_Repeatability
-            # varComp_total_variation = varComp_total_RageRR + varComp_part_to_part
-            # # total_GageRR = (varComp_reproducibility ** 2 + varComp_Repeatability ** 2) ** (1 / 2)
-            # print("varComp_Repeatability: ", varComp_Repeatability)
-            # print("varComp_reproducibility: ", varComp_reproducibility)
-            # print("varComp_part_to_part: ", varComp_part_to_part)
-            # print("varComp_total_RageRR: ", varComp_total_RageRR)
-            # print("varComp_total_variation: ", varComp_total_variation)
-            # # print("total_GageRR: ", total_GageRR)
-            # result = (varComp_Repeatability, varComp_reproducibility, varComp_op, varComp_op_dut, varComp_part_to_part,
-            #           varComp_total_RageRR)
-            # # Gage.grr_contribution(self, result)
-            # reproducibility = varComp_op if p_value1 > 0.05 else (varComp_op + varComp_op_dut)
-            # repeatability = varComp_Repeatability ** (1 / 2)
-            # total_RageRR = (reproducibility ** 2 + repeatability ** 2) ** (1 / 2)
-            # print("Grr: ", total_RageRR * 6)
-            # grr_tolerance = total_RageRR / self.range_spec
-            # print("grr_tolerance: ", grr_tolerance)
+            else:
+                varComp_op = ans2
+                print("varComp_op: ", varComp_op)
+                # -----------
+                varComp_op_dut = (MS_3 - MS_2) / arr_3d.shape[2]
+                print("varComp_op_dut: ", varComp_op_dut)
+                # -----------
+                if MS_0 > MS_3:
+                    varComp_part_to_part = (MS_0 - MS_2) / (3 * 3)  # ???????
+                else:
+                    varComp_part_to_part = 0
+
+            varComp_reproducibility = varComp_op if F3 > 0.05 else (varComp_op + varComp_op_dut)
+            varComp_total_RageRR = varComp_reproducibility + varComp_Repeatability
+            varComp_total_variation = varComp_total_RageRR + varComp_part_to_part
+            # total_GageRR = (varComp_reproducibility ** 2 + varComp_Repeatability ** 2) ** (1 / 2)
+            print("varComp_Repeatability: ", varComp_Repeatability)
+            print("varComp_reproducibility: ", varComp_reproducibility)
+            print("varComp_part_to_part: ", varComp_part_to_part)
+            print("varComp_total_RageRR: ", varComp_total_RageRR)
+            print("varComp_total_variation: ", varComp_total_variation)
+            # print("total_GageRR: ", total_GageRR)
+            result = (varComp_Repeatability, varComp_reproducibility, varComp_op, varComp_op_dut, varComp_part_to_part,
+                      varComp_total_RageRR)
+            # Gage.grr_contribution(self, result)
+            reproducibility = varComp_op if p_value1 > 0.05 else (varComp_op + varComp_op_dut)
+            repeatability = varComp_Repeatability ** (1 / 2)
+            total_RageRR = (reproducibility ** 2 + repeatability ** 2) ** (1 / 2)
+            print("Grr: ", total_RageRR * 6)
+            grr_tolerance = total_RageRR / self.range_spec
+            print("grr_tolerance: ", grr_tolerance)
 
         except RuntimeWarning as ex:
             raise "divide failure => " + str(ex.args)
         except Exception as ex:
             print(f"calc" + str(ex.args))
             raise "calc failure => " + str(ex.args)
+        return total_RageRR
 
 
 if __name__ == '__main__':
