@@ -1,10 +1,11 @@
 from tkinter import filedialog, messagebox
-from DigestData import PreManifest, DataUtils
-from Gage import Gage
+# from DigestData import PreManifest, DataUtils
+# from Gage import Gage
 from utils import utils
 import tkinter as tk
 # import glob
 import os
+import pandas as pd
 
 
 class InfoManager:
@@ -12,6 +13,10 @@ class InfoManager:
         self.font = ('Times New Roman', 12, "bold")
         self.txt_widget = txt_widget
         self.info = {}
+
+    def __truediv__(self, other):
+        line = "=" * len(other.count)
+        return "\n".join([self.txt_widget, line, other.count])
 
     def update_info(self, title, info):
         self.info[title] = info
@@ -26,14 +31,13 @@ class InfoManager:
         self.txt_widget.config(state=tk.NORMAL)
         self.txt_widget.delete('1.0', tk.END)
         for title, info in self.info.items():
-            self.txt_widget.insert(tk.END,
-                                   f"{title}\n ---------------\n"
-                                   f"{info}\r\n =========================== \r\n")
+            self.txt_widget.insert(tk.END, f">>> {title} \n" + ">>> " + f"{info} \r\n")
             self.txt_widget.see('end')
         self.txt_widget.config(state=tk.DISABLED)
 
 
 class StartPage(tk.Tk):
+
     def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
 
@@ -51,8 +55,11 @@ class StartPage(tk.Tk):
         self.label = tk.Label(self.frame, font=('Times', 20, 'bold'), text="Load txt before output file!",
                               justify='left')
         self.label.pack(side='top', padx=5, pady=5)
-        self.btnOpen = tk.Button(self.frame, text="Open Txt", command=lambda: self.chooseFile())
+        self.btnOpen = tk.Button(self.frame, text="Open Txt", command=lambda: self.open_grr_file())  # self.chooseFile()
         self.btnOpen.pack(side='top', padx=10, pady=5, anchor="w")
+        self.btnGrrCalc = tk.Button(self.frame, text="GRR Calculation",
+                                    command=lambda: self.calcu_grr())  # self.chooseFile()
+        self.btnGrrCalc.pack(side='top', padx=10, pady=5, anchor="w")
         self.btnPages = tk.Button(self.frame, text="open pages", command=lambda: self.create_frames())
         self.btnPages.pack(side='top', padx=10, pady=5, anchor="w")
         self.btnReadWifiTx = tk.Button(self.frame, text="Yield WIFI_TX_table", command=lambda: self.ReadRawData("Tx"))
@@ -85,6 +92,7 @@ class StartPage(tk.Tk):
         self.btnReadTxCalf6.config(state=tk.DISABLED)
         self.btnReadRxCalf32.config(state=tk.DISABLED)
         self.btnReadRxCalf5.config(state=tk.DISABLED)
+        self.btnGrrCalc.config(state=tk.DISABLED)
 
         self.txt = tk.Text(self.frameTxt, font=self.font, width=200, height=150, wrap=tk.WORD)
         self.txt.pack(side='left')
@@ -95,6 +103,7 @@ class StartPage(tk.Tk):
         # self.create_frames()
         # self.show_frame(StartPage)
         self.info_manager = InfoManager(self.txt)
+        self.grr_filePath: str = ""
 
         # label = tk.Label(self, text="This is the Start Page")
         # label.pack(side="top", fill="x", pady=10)
@@ -116,61 +125,22 @@ class StartPage(tk.Tk):
     def show_frame(self, cont):
         frame = self.frames[cont]
         frame.tkraise()
-    def open_grr_file(self):
-        askDir = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
-        if askDir:
-            df = pd.read_csv(askDir, skiprows=4)
-            print("Columns in the DataFrame:")
-            for column in df.columns:
-                print(column)
-            print("\nLooping through the data in each column:")
-            for column in df.columns:
-                print(f"Column: {column}")
-                for value in df[column]:
-                    print(value)
 
-    def open_wnc_file(self):
-        IsCast = messagebox.askyesno("Confirm", "是否為多筆資料?")
-        print(f'Current Pwd: ', {os.path.abspath("")})
-        print('------------------------------------------------')
-        if IsCast:
-            filesPolish = self.manifest_csv('DataPolish')
-            if filesPolish is None:
-                messagebox.showerror("file not exist", "get no data in DataPolish")
-                return None
-            else:
-                # TODO: divide one by wifiTye for once or all wifiType for once
-                messagebox.showinfo("Confirm", "確認資料夾內是否屬於同性質資料")
-                """
-                heterogeneous data will collapse combination
-                """
-                askDir = filedialog.askopenfilename()
-                wifiType = "11ax"
-                dfs = DataUtils.processingCsvAll(wifiType, self.DirDataPolish, self.DirDataSketch, self.DirDataRx)
-                # df = PreManifest.RecordFile(None, self.DirData, self.DirDataPolish)
-                # csvHeader = PreManifest.fmtPrintHeader(df)
-                countDutFail = PreManifest.fmtPrintHeader(dfs)
-                self.info_manager.update_info("Dut fail ", countDutFail)
-                self.selectorPanel(filesPolish, self.DirDataPolish)
+    def calcu_grr(self):
+        try:
+
+            utils.grr_data_digest(self.grr_filePath)
+        except Exception as e:
+            raise "calculate GRR err >>> " + str(e.args)
+
+    def open_grr_file(self):
+        self.grr_filePath = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
+        if self.grr_filePath:
+            self.info_manager.update_info("Read csv OK", f'File Path {self.grr_filePath}')
+            csvShape = utils.grr_data_digest(self.grr_filePath)
+            self.info_manager.update_info("csv dimension", f'{csvShape}')
         else:
-            oFile_path = filedialog.askopenfilename()
-            print(f'FileSourcePath: {0}'.format(oFile_path))
-            print('------------------------------------------------')
-            # if os.path.isfile(oFile_path):
-            if oFile_path:
-                try:
-                    csvHeader = PreManifest.fmtPrintHeader(oFile_path)
-                    self.info_manager.update_info(">>> Loading data ", csvHeader)
-                    countDutFail = PreManifest.RecordFile(oFile_path, self.DirData, self.DirDataPolish)
-                    self.info_manager.update_info("Which DutNo Fail: ", countDutFail)
-                    self.treemapDiagram(oFile_path)
-                    # self.frame.pack(side='left')
-                    # self.frame.grid_rowconfigure(0, weight=1)
-                    # self.frame.grid_columnconfigure(0, weight=1)
-                    # self.frame.grid_rowconfigure(1, weight=1)
-                    # self.frame.grid_columnconfigure(1, weight=1)
-                except Exception as e:
-                    raise f'openFile Err->{str(e.args)}'
+            messagebox.showinfo("File format NG")
 
     def chooseFile(self):
         filePath = filedialog.askopenfilename()
@@ -319,5 +289,3 @@ if __name__ == '__main__':
     # app.protocol("WM_DELETE_WINDOW", self.on_exit)
     # app.mainloop()
     app.run()
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/

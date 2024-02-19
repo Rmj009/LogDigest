@@ -1,7 +1,54 @@
-import pandas as pd
 import os
-import openpyxl
+import numpy as np
+import pandas as pd
 import csv
+
+
+# import openpyxl
+
+def grr_calculation(df: pd.DataFrame(), col_nth: int) -> str:
+    grr_value = "none"
+    """
+    loop columns to calc 
+    """
+    try:
+        df_testItem = pd.DataFrame(np.array(df.iloc[:, col_nth]).reshape(10, 9))
+        df_testItem = df_testItem.T
+        df_testItem.index = ['A', 'A', 'A', 'B', 'B', 'B', 'C', 'C', 'C']
+        df_testItem.columns = [i for i in range(10)]
+    except Exception as e:
+        raise "grr_calculation" + str(e.args)
+    return grr_value
+
+
+def grr_cooking():
+    """
+    split dataframe into A,B,C blocks
+    :return:
+    """
+    try:
+        pass
+    except Exception as e:
+        raise "grr_cooking" + str(e.args)
+    return
+
+
+def grr_data_digest(filepath) -> str:
+    try:
+        df = pd.read_csv(filepath, skiprows=4, header=None)
+        # df_testItem.reset_index(drop=True, inplace=True)
+
+        print("Columns in the DataFrame:")
+        for column in df.columns:
+            print(column)
+        print("\nLooping through the data in each column:")
+        for column in df.columns:
+            print(f"Column: {column}")
+            for value in df[column]:
+                print(value)
+    except Exception as e:
+        raise "csv data under 90" + str(e.args)
+    return str(df.shape)
 
 
 def convertToDf(*args) -> pd.DataFrame():
@@ -50,42 +97,42 @@ BeamForm    --->    ( 105 ~ 109 ) makeBeamFormTable
 def makeTxTable(sourcePath):
     filepath = os.path.join(sourcePath, f'RawData.csv')
     df = pd.read_csv(filepath, header=0, sep=',', encoding='UTF-8')
-    try:
-        # todo: more general way
-        subset1 = df.loc[7:14]
-        subset2 = df.loc[34:65]
-        Tx_rows = pd.concat([subset1, subset2])
-        # Tx_rows = df.loc[7:14].append(df.loc[34:65])
-        Tx_rows = Tx_rows.reset_index(drop=True)
-        columnNames = {"0": 'TestItem', "1": 'Frequency', "2": 'DataRate', "3": 'Bandwidth', "4": 'Antenna', "5": 'TxPower',
-                       "6": 'Power',
-                       "7": 'MaskMargin', "8": 'Freq1', "9": 'Freq2', "10": 'Freq3', "11": 'Freq4', "12": 'Freq5',
-                       "13": 'Freq6',
-                       "14": 'Freq7', "15": 'Freq8', "16": 'EVM', "17": 'FreqErr', "18": 'SpectrumMask', "19": 'TestTime'}
-        Tx_rows = Tx_rows.rename(columns=columnNames)
-        TxDf = Tx_rows.iloc[:, 0:21]
-        # TxTable = pd.DataFrame()
-        # TxDf['TestItem'] = TxDf['TestItem']
-        TxDf['Frequency'] = TxDf['Frequency'].str.split("Frequency: ").str[1]
-        TxDf['DataRate'] = TxDf['DataRate'].str.split("Data Rate: ").str[1]
-        TxDf['Bandwidth'] = TxDf['Bandwidth'].str.split("Bandwidth: BW-").str[1]
-        TxDf['Antenna'] = TxDf['Antenna'].str.split("Antenna: ANT_").str[1]
-        TxDf['TxPower'] = TxDf['TxPower'].str.split("Tx Power: ").str[1]
-        TxDf['Power'] = TxDf['Power'].str.split("Power             ").str[1]
-        # TxDf['MaskMargin'] = TxDf['MaskMargin']
-        for i in range(1, 9):
-            column_name = f'Freq{i}'
-            TxDf[column_name] = TxDf[column_name].str.split("Frequency          ").str[1]
-
-        TxDf['EVM'] = TxDf['EVM'].str.split("EVM          ").str[1]
-        TxDf['FreqErr'] = TxDf['FreqErr'].str.split("Freq Error          ").str[1]
-        TxDf['SpectrumMask'] = TxDf['SpectrumMask'].str.split("Spectrum Mask   ").str[1]
-        TxDf['TestTime'] = TxDf['TestTime'].str.split("Test time: ").str[1]
-        # TxDf.head()
-        csvpath = os.path.join(sourcePath, "Data")
-        TxDf.to_csv(os.path.join(csvpath, f'TxDF.csv'), sep=',', encoding='UTF-8')
-    except Exception as ex:
-        yield ex
+    subset1 = df.loc[7:14]
+    subset2 = df.loc[34:65]
+    Tx_rows = pd.concat([subset1, subset2])
+    # Tx_rows = df.loc[7:14].append(df.loc[34:65])
+    Tx_rows = Tx_rows.reset_index(drop=True)
+    columnNames = {"0": 'TestItem', "1": 'Frequency', "2": 'DataRate', "3": 'Bandwidth', "4": 'Antenna', "5": 'TxPower',
+                   "6": 'Power',
+                   "7": 'MaskMargin', "8": 'Freq1', "9": 'Freq2', "10": 'Freq3', "11": 'Freq4', "12": 'Freq5',
+                   "13": 'Freq6',
+                   "14": 'Freq7', "15": 'Freq8', "16": 'EVM', "17": 'FreqErr', "18": 'SpectrumMask', "19": 'TestTime'}
+    Tx_rows = Tx_rows.rename(columns=columnNames)
+    TxDf = Tx_rows.iloc[:, 0:21]
+    # TxTable = pd.DataFrame()
+    # TxDf['TestItem'] = TxDf['TestItem']
+    TxDf['Frequency'] = TxDf['Frequency'].str.split("Frequency: ").str[1]
+    TxDf['DataRate'] = TxDf['DataRate'].str.split("Data Rate: ").str[1]
+    TxDf['Bandwidth'] = TxDf['Bandwidth'].str.split("Bandwidth: BW-").str[1]
+    TxDf['Antenna'] = TxDf['Antenna'].str.split("Antenna: ANT_").str[1]
+    TxDf['TxPower'] = TxDf['TxPower'].str.split("Tx Power: ").str[1]
+    TxDf['Power'] = TxDf['Power'].str.split("Power             ").str[1]
+    # TxDf['MaskMargin'] = TxDf['MaskMargin']
+    TxDf['Freq1'] = TxDf['Freq1'].str.split("Frequency          ").str[1]
+    TxDf['Freq2'] = TxDf['Freq2'].str.split("Frequency          ").str[1]
+    TxDf['Freq3'] = TxDf['Freq3'].str.split("Frequency          ").str[1]
+    TxDf['Freq4'] = TxDf['Freq4'].str.split("Frequency          ").str[1]
+    TxDf['Freq5'] = TxDf['Freq5'].str.split("Frequency          ").str[1]
+    TxDf['Freq6'] = TxDf['Freq6'].str.split("Frequency          ").str[1]
+    TxDf['Freq7'] = TxDf['Freq7'].str.split("Frequency          ").str[1]
+    TxDf['Freq8'] = TxDf['Freq8'].str.split("Frequency          ").str[1]
+    TxDf['EVM'] = TxDf['EVM'].str.split("EVM          ").str[1]
+    TxDf['FreqErr'] = TxDf['FreqErr'].str.split("Freq Error          ").str[1]
+    TxDf['SpectrumMask'] = TxDf['SpectrumMask'].str.split("Spectrum Mask   ").str[1]
+    TxDf['TestTime'] = TxDf['TestTime'].str.split("Test time: ").str[1]
+    # TxDf.head()
+    csvpath = os.path.join(sourcePath, "Data")
+    TxDf.to_csv(os.path.join(csvpath, f'TxDF.csv'), sep=',', encoding='UTF-8')
 
 
 def makeRxTable(sourcePath):
@@ -330,6 +377,5 @@ def makeWifiRxCalib32(sourcePath):
         result.to_csv(os.path.join(csvpath, f'WIFI_RX_CALIBRATION_32.csv'), sep=',', encoding='UTF-8')
     except Exception as ee:
         raise f"make Tx Calif32 excel in valid\n" + str(ee.args)
-
 
 # endregion
