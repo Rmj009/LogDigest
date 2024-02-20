@@ -8,7 +8,6 @@ from utils import utils
 import tkinter as tk
 # import glob
 import os
-import pandas as pd
 
 
 class InfoManager:
@@ -61,7 +60,7 @@ class StartPage(tk.Tk):
         self.btnOpen = tk.Button(self.frame, text="Open Txt", command=lambda: self.open_grr_file())  # self.chooseFile()
         self.btnOpen.pack(side='top', padx=10, pady=5, anchor="w")
         self.btnGrrCalc = tk.Button(self.frame, text="GRR Calculation",
-                                    command=lambda: self.calcu_grr())  # self.chooseFile()
+                                    command=lambda: self.calc_grr())  # self.chooseFile()
         self.btnGrrCalc.pack(side='top', padx=10, pady=5, anchor="w")
         self.btnPages = tk.Button(self.frame, text="open pages", command=lambda: self.create_frames())
         self.btnPages.pack(side='top', padx=10, pady=5, anchor="w")
@@ -95,7 +94,7 @@ class StartPage(tk.Tk):
         self.btnReadTxCalf6.config(state=tk.DISABLED)
         self.btnReadRxCalf32.config(state=tk.DISABLED)
         self.btnReadRxCalf5.config(state=tk.DISABLED)
-        self.btnGrrCalc.config(state=tk.DISABLED)
+        # self.btnGrrCalc.config(state=tk.DISABLED)
 
         self.txt = tk.Text(self.frameTxt, font=self.font, width=200, height=150, wrap=tk.WORD)
         self.txt.pack(side='left')
@@ -107,7 +106,7 @@ class StartPage(tk.Tk):
         # self.show_frame(StartPage)
         self.info_manager = InfoManager(self.txt)
         self.grr_filePath: str = ""
-        self.grr_spec = np.array()
+        self.grr_spec: np.array() = None
 
         # label = tk.Label(self, text="This is the Start Page")
         # label.pack(side="top", fill="x", pady=10)
@@ -130,7 +129,7 @@ class StartPage(tk.Tk):
         frame = self.frames[cont]
         frame.tkraise()
 
-    def calcu_grr(self):
+    def calc_grr(self):
         try:
             utils.grr_cooking(self.grr_filePath, self.grr_spec)
         except Exception as e:
@@ -144,6 +143,7 @@ class StartPage(tk.Tk):
             # self.info_manager.update_info("csv dimension", f'{csvShape}')
         else:
             messagebox.showinfo("File format NG")
+        return True
 
     def chooseFile(self):
         filePath = filedialog.askopenfilename()

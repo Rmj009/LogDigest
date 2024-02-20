@@ -8,17 +8,19 @@ from Gage import Gage
 
 # import openpyxl
 
-def grr_calculation(df: pd.DataFrame(), col_nth: int) -> str:
+def grr_calculation(df: pd.DataFrame(), col_nth: int, spec_range) -> str:
     """
-    loop columns to calc 
+    loop columns to calc
     """
     try:
+        USL = float(spec_range[0])
+        LSL = float(spec_range[1])
         df_testItem = pd.DataFrame(np.array(df.iloc[:, col_nth]).reshape(10, 9))
         df_testItem = df_testItem.T
         df_testItem.index = ['A', 'A', 'A', 'B', 'B', 'B', 'C', 'C', 'C']
         df_testItem.columns = [i for i in range(10)]
         grr_data = df_testItem.values.reshape(3, 10, 3)
-        grr_instance = Gage(grr_data, -5, 5)
+        grr_instance = Gage(grr_data, LSL, USL)
         grr_value = grr_instance.rawData_handling(grr_data)
     except Exception as e:
         raise "grr_calculation" + str(e.args)
@@ -30,32 +32,47 @@ def grr_cooking(filepath, grr_spec):
     split dataframe into A,B,C blocks
     :return:
     """
-    grr_lst = []
-    print("grr_spec", grr_spec)
+    grr_lst = []  # ["GRR"]
+    grr_lst.append("0")  # fill in na
     try:
-        df = pd.read_csv(filepath, skiprows=4, header=None)
-        for i in range(df.shape[1] - 2):
-            grr_lst.append(grr_calculation(df, i + 2))
-        result = np.array(grr_lst)
+        df = pd.read_csv(filepath, skiprows=4, header=None, index_col=0)
+        df = df.iloc[:, :-1]  # ignore last column
+        for i in range(df.shape[1] - 1):
+            grr_lst.append(grr_calculation(df, i + 1, grr_spec[:, i]))
+
+        # df_result = df.iloc[:3].append(result, ignore_index=True).append(df.iloc[3:], ignore_index=True)
+        df_result = pd.read_csv(filepath, header=0, index_col=0)
+        df_result = df_result.iloc[:, :-1]
+        df_result.loc['GRR'] = np.array(grr_lst)
+        # df_result.loc['GRR1'] = np.array(grr_lst)
+        # df_result.loc['GRR2'] = np.array(grr_lst)
+        # df_result.loc['GRR3'] = np.array(grr_lst)
+        # df_result.loc['GRR4'] = np.array(grr_lst)
+        # df_result.loc['GRR5'] = np.array(grr_lst)
+
+        df_result = pd.DataFrame(df_result)
+        # df_result = pd.concat([df.iloc[:3], result, df.iloc[3:]]).reset_index(drop=True)
+        df_result.to_csv("result.csv", sep=',')
+
     except Exception as e:
         raise "grr_cooking" + str(e.args)
-    return result
+    return "success"
 
 
 def grr_data_digest(filepath) -> np.array:
     try:
-        df = pd.read_csv(filepath, skiprows=4, header=None)
-        df_spec_array = df.iloc[[1, 2]].values
-        # df_testItem.reset_index(drop=True, inplace=True)
-
-        print("Columns in the DataFrame:")
-        for column in df.columns:
-            print(column)
-        print("\nLooping through the data in each column:")
-        for column in df.columns:
-            print(f"Column: {column}")
-            for value in df[column]:
-                print(value)
+        df = pd.read_csv(filepath, header=0, index_col=0)
+        df = df.iloc[:, :-1]
+        df_spec_array = df.iloc[[0, 1]].values[:, 1:]
+        # range_specLst = df_spec_array[0] - df_spec_array[1]
+        # print("Columns in the DataFrame:")
+        # for column in df.columns:
+        #     print(column)
+        # print("\nLooping through the data in each column:")
+        # for column in df.columns:
+        #     print(f"Column: {column}")
+        #     for value in df[column]:
+        #         print(value)
     except Exception as e:
         raise "csv data under 90" + str(e.args)
     return df_spec_array  # str(df.shape)
