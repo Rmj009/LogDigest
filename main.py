@@ -1,9 +1,6 @@
 from tkinter import filedialog, messagebox
-
-import numpy as np
-
 # from DigestData import PreManifest, DataUtils
-# from Gage import Gage
+from Gage import Gage
 from utils import utils
 import tkinter as tk
 # import glob
@@ -38,11 +35,11 @@ class InfoManager:
         self.txt_widget.config(state=tk.DISABLED)
 
 
-class StartPage(tk.Tk):
+class StartPage:
 
-    def __init__(self, *args, **kwargs):
-        tk.Tk.__init__(self, *args, **kwargs)
-
+    def __init__(self):
+        # tk.Tk.__init__(self, *args, **kwargs)
+        super().__init__()
         self.root = tk.Tk()
         self.windows = []
         self.root.geometry("750x600")
@@ -102,26 +99,25 @@ class StartPage(tk.Tk):
         self.path = os.path.dirname(os.path.abspath('__file__'))
         self.create_dataDir()
         self.frames = {}
-        # self.create_frames()
-        # self.show_frame(StartPage)
+        # self.show_frame(PageOne)
         self.info_manager = InfoManager(self.txt)
         self.grr_filePath: str = ""
-        self.grr_spec: np.array() = None
+        self.grr_spec = None
 
-        # label = tk.Label(self, text="This is the Start Page")
-        # label.pack(side="top", fill="x", pady=10)
-        # button1 = tk.Button(self, text="Go to Page One",
+        label = tk.Label(self.root, text="This is the Start Page")
+        label.pack(side="top", fill="x", pady=10)
+        # button1 = tk.Button(self.root, text="Go to Page One",
         #                     command=lambda: controller.show_frame(PageOne))
         # button1.pack()
 
     def create_frames(self):
-        container = tk.Frame(self)
+        container = tk.Frame(self.root)
         container.pack(side="top", fill="both", expand=True)
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
 
         for F in (PageOne, PageTwo):
-            frame = F(container, self)
+            frame = F(container, self.root)
             self.frames[F] = frame
             frame.grid(row=0, column=0, sticky="nsew")
 
@@ -136,13 +132,16 @@ class StartPage(tk.Tk):
             raise "calculate GRR err >>> " + str(e.args)
 
     def open_grr_file(self):
-        self.grr_filePath = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
-        if self.grr_filePath:
-            self.info_manager.update_info("Read csv OK", f'File Path {self.grr_filePath}')
-            self.grr_spec = utils.grr_data_digest(self.grr_filePath)
-            # self.info_manager.update_info("csv dimension", f'{csvShape}')
-        else:
-            messagebox.showinfo("File format NG")
+        try:
+            self.grr_filePath = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
+            if self.grr_filePath:
+                self.info_manager.update_info("Read csv OK", f'File Path {self.grr_filePath}')
+                self.grr_spec = utils.grr_data_digest(self.grr_filePath)
+                # self.info_manager.update_info("csv dimension", f'{csvShape}')
+            else:
+                messagebox.showinfo("File format NG")
+        except Exception as e:
+            raise "open grr file NG >>> " + str(e.args)
         return True
 
     def chooseFile(self):
@@ -251,8 +250,8 @@ class StartPage(tk.Tk):
 class PageOne(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
-        # self.root = tk.Tk()
-        # self.root.title("PageOne")
+        self.root = tk.Tk()
+        self.root.title("PageOne")
         label = tk.Label(self, text="This is Page One")
         label.pack(side="top", fill="x", pady=10)
         button1 = tk.Button(self, text="Go to Start Page",
@@ -266,6 +265,8 @@ class PageOne(tk.Frame):
 class PageTwo(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
+        self.root = tk.Tk()
+        self.root.title("PageTwo")
         label = tk.Label(self, text="This is Page Two")
         label.pack(side="top", fill="x", pady=10)
         button1 = tk.Button(self, text="Go to Start Page",
