@@ -32,8 +32,7 @@ def grr_cooking(filepath, grr_spec):
     split dataframe into A,B,C blocks
     :return:
     """
-    grr_lst = []  # ["GRR"]
-    grr_lst.append("0")  # fill in na
+    grr_lst = ["0"]  # ["GRR"]
     try:
         df = pd.read_csv(filepath, skiprows=4, header=None, index_col=0)
         df = df.iloc[:, :-1]  # ignore last column
@@ -64,6 +63,13 @@ def grr_data_digest(filepath) -> np.array:
         df = pd.read_csv(filepath, header=0, index_col=0)
         df = df.iloc[:, :-1]
         df_spec_array = df.iloc[[0, 1]].values[:, 1:]
+        # mv2df = pd.DataFrame()
+
+        df_values = df.iloc[3: df.shape[0], 1: df.shape[1]]
+        mv2df = df_values.rolling(window=2).mean()
+        print(mv2df)
+        # for col_nth in df.columns:
+        #     mv2df[col_nth] = df[col_nth].rolling(window=2).mean()
         # range_specLst = df_spec_array[0] - df_spec_array[1]
         # print("Columns in the DataFrame:")
         # for column in df.columns:
@@ -76,6 +82,14 @@ def grr_data_digest(filepath) -> np.array:
     except Exception as e:
         raise "csv data under 90" + str(e.args)
     return df_spec_array  # str(df.shape)
+
+
+def cooking_moving_average(cols):
+    try:
+        mv_arr = cols
+    except Exception as e:
+        raise "_moving_average" + "NG >>>" + str(e.args)
+    return mv_arr  # str(df.shape)
 
 
 def convertToDf(*args) -> pd.DataFrame():

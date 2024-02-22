@@ -212,7 +212,7 @@ class Gage:
             repeatability = varComp_Repeatability ** (1 / 2)
             total_RageRR = (reproducibility ** 2 + repeatability ** 2) ** (1 / 2)
             print("Grr: ", total_RageRR * 6)
-            grr_tolerance = total_RageRR / self.range_spec
+            grr_tolerance = total_RageRR * 6 / self.range_spec * 100
             print("grr_tolerance: ", grr_tolerance)
 
         except RuntimeWarning as ex:
@@ -220,7 +220,7 @@ class Gage:
         except Exception as ex:
             print(f"calc" + str(ex.args))
             raise "calc failure => " + str(ex.args)
-        return total_RageRR
+        return grr_tolerance
 
 
 if __name__ == '__main__':

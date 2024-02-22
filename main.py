@@ -1,6 +1,6 @@
 from tkinter import filedialog, messagebox
 # from DigestData import PreManifest, DataUtils
-from Gage import Gage
+# from Gage import Gage
 from utils import utils
 import tkinter as tk
 # import glob
@@ -99,14 +99,14 @@ class StartPage:
         self.path = os.path.dirname(os.path.abspath('__file__'))
         self.create_dataDir()
         self.frames = {}
-        # self.show_frame(PageOne)
+        # self.show_frame(StartPage)
         self.info_manager = InfoManager(self.txt)
         self.grr_filePath: str = ""
         self.grr_spec = None
 
         label = tk.Label(self.root, text="This is the Start Page")
         label.pack(side="top", fill="x", pady=10)
-        # button1 = tk.Button(self.root, text="Go to Page One",
+        # button1 = tk.Button(self, text="Go to Page One",
         #                     command=lambda: controller.show_frame(PageOne))
         # button1.pack()
 
@@ -139,12 +139,13 @@ class StartPage:
                 self.grr_spec = utils.grr_data_digest(self.grr_filePath)
                 # self.info_manager.update_info("csv dimension", f'{csvShape}')
             else:
-                messagebox.showinfo("File format NG")
+                messagebox.showerror("No FILE", "Plz reload file")
+                return False
         except Exception as e:
             raise "open grr file NG >>> " + str(e.args)
         return True
 
-    def chooseFile(self):
+    def choose_file(self):
         filePath = filedialog.askopenfilename()
         self.info_manager.update_info(f'Loading from file path', filePath)
         if filePath:
