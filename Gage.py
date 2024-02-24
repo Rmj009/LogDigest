@@ -1,4 +1,6 @@
 import datetime as dt
+import math
+
 import numpy as np
 from scipy.stats import f
 
@@ -45,13 +47,12 @@ class Gage:
         # C_op = np.array(self.data)
         try:
             arr_3d = np.array(self.data)
-            # print(arr_3d.shape)
-            overall_average = np.mean(arr_3d)
+            overall_average = np.nan if np.isnan(np.mean(arr_3d)) else np.mean(arr_3d)
             print("Average of DUT:", overall_average)
             op_mean_lst = [np.mean(arr_3d[x]) for x in range(arr_3d.shape[2])]  # shape >>> (3, 10, 3)
-
             print("OP-mean", op_mean_lst)
-
+            if overall_average == 0:
+                return np.nan
             # Initialize arrays to store squared differences
             RR_A = []
             RR_B = []
@@ -72,7 +73,7 @@ class Gage:
                     print(f"squared_diff_B: ({arr_3d[1][j][i]} - {dut_op_mean_lst[1][j]} )**2 ")
                     squared_diff_C = (arr_3d[2][j][i] - float(dut_op_mean_lst[2][j])) ** 2
                     print(f"squared_diff_C: ({arr_3d[2][j][i]} - {dut_op_mean_lst[2][j]} )**2 ")
-                    print('-----------------------------------------')
+                    # print('-----------------------------------------')
                     RR_A.append(squared_diff_A)
                     RR_B.append(squared_diff_B)
                     RR_C.append(squared_diff_C)
@@ -81,10 +82,10 @@ class Gage:
             RR_A_sum = np.sum(RR_A)
             RR_B_sum = np.sum(RR_B)
             RR_C_sum = np.sum(RR_C)
-
-            # print("RR_A:", RR_A_sum)
-            # print("RR_B:", RR_B_sum)
-            # print("RR_C:", RR_C_sum)
+            print("RR_A:", RR_A_sum)
+            print("RR_B:", RR_B_sum)
+            print("RR_C:", RR_C_sum)
+            # =================================================================================
             # --------------------- Sum of square -----------------------------
             dut_mean_lst = [np.mean([arr_3d[0][i], arr_3d[1][i], arr_3d[2][i]]) for i in
                             range(arr_3d.shape[1])]
@@ -155,7 +156,7 @@ class Gage:
             print("p_value2_t2: ", p_value2_t2)
             print('-----------------------------------------')
             # -------------- GRR_Variance --------------
-            varComp_Repeatability = 0 if F3 > 0.05 else MS_3
+            varComp_Repeatability = MS_2_t2 if F3 > 0.05 else MS_3
 
             isGreater = MS_2 - MS_3 > 0
             # print("isGreater: ", isGreater)
@@ -204,13 +205,10 @@ class Gage:
             print("varComp_part_to_part: ", varComp_part_to_part)
             print("varComp_total_RageRR: ", varComp_total_RageRR)
             print("varComp_total_variation: ", varComp_total_variation)
-            # print("total_GageRR: ", total_GageRR)
-            result = (varComp_Repeatability, varComp_reproducibility, varComp_op, varComp_op_dut, varComp_part_to_part,
-                      varComp_total_RageRR)
             # Gage.grr_contribution(self, result)
             reproducibility = varComp_op if p_value1 > 0.05 else (varComp_op + varComp_op_dut)
             repeatability = varComp_Repeatability ** (1 / 2)
-            total_RageRR = (reproducibility ** 2 + repeatability ** 2) ** (1 / 2)
+            total_RageRR = math.sqrt((reproducibility ** 2 + repeatability ** 2)) # ** (1 / 2)
             print("Grr: ", total_RageRR * 6)
             grr_tolerance = total_RageRR * 6 / self.range_spec * 100
             print("grr_tolerance: ", grr_tolerance)
@@ -220,24 +218,24 @@ class Gage:
         except Exception as ex:
             print(f"calc" + str(ex.args))
             raise "calc failure => " + str(ex.args)
-        return grr_tolerance
+        return np.nan if np.isnan(F1) else grr_tolerance
 
 
-if __name__ == '__main__':
-    # A_op = [[1, 2, 3] for _ in range(10)] B_op = [[4, 5, 6] for _ in range(10)] C_op = [[7, 8, 9] for _ in range(
-    # 10)] A_op = [[42,42,42],[41,42,44],[44,44,44],[40,41,42],[42,41,43],[42,42,42],[40,40,39],[39,40,41],[41,41,
-    # 41],[40,40,41]] B_op = [[40,39,41],[41,41,41],[41,41,41],[41,41,42],[43,42,42],[42,42,42],[41,42,42],[43,43,
-    # 44],[40,40,42],[39,40,42]] C_op = [[41,42,42],[41,39,41],[40,42,43],[43,42,40],[39,38,38],[38,39,40],[41,40,
-    # 39],[44,43,39],[39,39,40],[40,41,40]]
-
-    A_op = [[42, 42, 42], [40, 41, 42], [40, 40, 39], [40, 40, 41], [41, 41, 41], [42, 42, 42], [40, 40, 42],
-            [41, 39, 41], [39, 38, 38], [44, 43, 39]]
-    B_op = [[41, 42, 44], [42, 41, 43], [39, 40, 41], [40, 39, 41], [41, 41, 42], [41, 42, 42], [39, 40, 42],
-            [40, 42, 43], [38, 39, 40], [39, 39, 40]]
-    C_op = [[44, 44, 44], [42, 42, 42], [41, 41, 41], [41, 41, 41], [43, 42, 42], [43, 43, 44], [41, 42, 42],
-            [43, 42, 40], [41, 40, 39], [40, 41, 40]]
-
-    DUT_1 = [A_op, B_op, C_op]
-    # print(DUT_1)
-    grr_instance = Gage(DUT_1, -5, 5)
-    grr_instance.rawData_handling(DUT_1)
+# if __name__ == '__main__':
+#     # A_op = [[1, 2, 3] for _ in range(10)] B_op = [[4, 5, 6] for _ in range(10)] C_op = [[7, 8, 9] for _ in range(
+#     # 10)] A_op = [[42,42,42],[41,42,44],[44,44,44],[40,41,42],[42,41,43],[42,42,42],[40,40,39],[39,40,41],[41,41,
+#     # 41],[40,40,41]] B_op = [[40,39,41],[41,41,41],[41,41,41],[41,41,42],[43,42,42],[42,42,42],[41,42,42],[43,43,
+#     # 44],[40,40,42],[39,40,42]] C_op = [[41,42,42],[41,39,41],[40,42,43],[43,42,40],[39,38,38],[38,39,40],[41,40,
+#     # 39],[44,43,39],[39,39,40],[40,41,40]]
+#
+#     A_op = [[42, 42, 42], [40, 41, 42], [40, 40, 39], [40, 40, 41], [41, 41, 41], [42, 42, 42], [40, 40, 42],
+#             [41, 39, 41], [39, 38, 38], [44, 43, 39]]
+#     B_op = [[41, 42, 44], [42, 41, 43], [39, 40, 41], [40, 39, 41], [41, 41, 42], [41, 42, 42], [39, 40, 42],
+#             [40, 42, 43], [38, 39, 40], [39, 39, 40]]
+#     C_op = [[44, 44, 44], [42, 42, 42], [41, 41, 41], [41, 41, 41], [43, 42, 42], [43, 43, 44], [41, 42, 42],
+#             [43, 42, 40], [41, 40, 39], [40, 41, 40]]
+#
+#     DUT_1 = [A_op, B_op, C_op]
+#     # print(DUT_1)
+#     grr_instance = Gage(DUT_1, -5, 5)
+#     grr_instance.rawData_handling(DUT_1)

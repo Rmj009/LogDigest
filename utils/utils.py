@@ -5,21 +5,27 @@ import csv
 
 from Gage import Gage
 
+import openpyxl
 
-# import openpyxl
 
-def grr_calculation(df: pd.DataFrame(), col_nth: int, spec_range) -> str:
+def grr_calculation(grr_data: np.array, spec_range) -> str:
     """
     loop columns to calc
     """
     try:
         USL = float(spec_range[0])
         LSL = float(spec_range[1])
-        df_testItem = pd.DataFrame(np.array(df.iloc[:, col_nth]).reshape(10, 9))
-        df_testItem = df_testItem.T
-        df_testItem.index = ['A', 'A', 'A', 'B', 'B', 'B', 'C', 'C', 'C']
-        df_testItem.columns = [i for i in range(10)]
-        grr_data = df_testItem.values.reshape(3, 10, 3)
+        # df_testItem = pd.DataFrame(np.array(df.iloc[:, col_nth]).reshape(10, 9))
+        df_testItem = pd.DataFrame(grr_data)
+        # df_testItem = df_testItem.T
+        df_testItem.columns = ['A', 'A', 'A', 'B', 'B', 'B', 'C', 'C', 'C']
+        df_testItem.index = [i for i in range(10)]
+        A_op = df_testItem.iloc[:, :3].values
+        B_op = df_testItem.iloc[:, 3:6].values
+        C_op = df_testItem.iloc[:, 6:].values
+        # a = np.all(grr_data == np.swapaxes(df_testItem.values, 1, 0))
+        grr_data = [A_op, B_op, C_op]
+
         grr_instance = Gage(grr_data, LSL, USL)
         grr_value = grr_instance.rawData_handling(grr_data)
     except Exception as e:
@@ -36,12 +42,13 @@ def grr_cooking(filepath, grr_spec):
     try:
         df = pd.read_csv(filepath, skiprows=4, header=None, index_col=0)
         df = df.iloc[:, :-1]  # ignore last column
-        for i in range(df.shape[1] - 1):
-            grr_lst.append(grr_calculation(df, i + 1, grr_spec[:, i]))
 
-        # df_result = df.iloc[:3].append(result, ignore_index=True).append(df.iloc[3:], ignore_index=True)
+        for i in range(df.shape[1] - 1):
+            select_arr_ith = np.array(df.iloc[:, i + 1]).reshape(10, 9)
+            grr_lst.append(grr_calculation(select_arr_ith, grr_spec[:, i]))
         df_result = pd.read_csv(filepath, header=0, index_col=0)
         df_result = df_result.iloc[:, :-1]
+        grr_lst = [np.nan if val == '0' else float(val) for val in grr_lst]
         df_result.loc['GRR'] = np.array(grr_lst)
         # df_result.loc['GRR1'] = np.array(grr_lst)
         # df_result.loc['GRR2'] = np.array(grr_lst)
@@ -59,15 +66,38 @@ def grr_cooking(filepath, grr_spec):
 
 
 def grr_data_digest(filepath) -> np.array:
+    window = 2
+    arr_weight = pd.DataFrame()
+    arr_result = pd.DataFrame()
+    df_result = pd.DataFrame()  # index=range(df.shape[0]), columns=range(df.shape[1])
+
     try:
         df = pd.read_csv(filepath, header=0, index_col=0)
-        df = df.iloc[:, :-1]
+        df = df.iloc[:, :-1]  # ignore last column
+        loop_row_time = df.shape[0] // 9
         df_spec_array = df.iloc[[0, 1]].values[:, 1:]
-        # mv2df = pd.DataFrame()
 
-        df_values = df.iloc[3: df.shape[0], 1: df.shape[1]]
-        mv2df = df_values.rolling(window=2).mean()
-        print(mv2df)
+        df_values = df.iloc[3: df.shape[0], 1: df.shape[1]]  # all values
+        for col in range(df_values.shape[1]):
+            for row in range(loop_row_time):  # dut_test_times per dut = 9
+                arr_weight = pd.DataFrame(np.array(df_values.iloc[:9 * (row + 1), col]))  # slice by _dut
+                arr_weight = arr_weight.rolling(window, min_periods=(window // 2), center=True).mean().values
+                # arr_result = np.append(arr_result, arr_weight)
+            df_result[f'{col}'] = arr_weight.tolist()
+
+        df_result.reshape(df.shape[0], df.shape[1])
+        print(df_result)
+
+        # for i in range(df.shape[1] - 1):
+        #     select_arr_ith = np.array(df.iloc[:, i + 1]).reshape(10, 9)
+        #     df_testItem = pd.DataFrame(select_arr_ith)
+        #     df_testItem = df_testItem.T
+        #     df_testItem.index = ['A', 'A', 'A', 'B', 'B', 'B', 'C', 'C', 'C']
+        #     df_testItem.columns = [i for i in range(10)]
+        #     grr_data = pd.DataFrame(df_testItem.values.reshape(3, 10, 3))
+        #     grr_data.loc['A'].apply(lambda x: x.rolling(window=2).mean())
+
+        # /////////////////////////////////////////////////////////////////////
         # for col_nth in df.columns:
         #     mv2df[col_nth] = df[col_nth].rolling(window=2).mean()
         # range_specLst = df_spec_array[0] - df_spec_array[1]
