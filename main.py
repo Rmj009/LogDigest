@@ -1,4 +1,4 @@
-from tkinter import filedialog, messagebox
+from tkinter import ttk, filedialog, messagebox
 # from DigestData import PreManifest, DataUtils
 from my_utils import Digest_utils
 import tkinter as tk
@@ -41,6 +41,7 @@ class StartPage:
         super().__init__()
         self.root = tk.Tk()
         self.windows = []
+        self.GGR_option = 0
         self.root.geometry("750x600")
         self.root.title("Entrance")
         self.font = ('Times New Roman', 12, "bold")
@@ -53,10 +54,23 @@ class StartPage:
         self.label = tk.Label(self.frame, font=('Times', 20, 'bold'), text="Load txt before output file!",
                               justify='left')
         self.label.pack(side='top', padx=5, pady=5)
-        self.btnOpen = tk.Button(self.frame, text="Open Txt", command=lambda: self.open_grr_file())  # self.chooseFile()
+        self.btnOpen = tk.Button(self.frame, text="Open", command=lambda: self.open_grr_file())  # self.chooseFile()
         self.btnOpen.pack(side='top', padx=10, pady=5, anchor="w")
         self.btnGrrCalc = tk.Button(self.frame, text="GRR Calculation",
                                     command=lambda: self.calc_grr())  # self.chooseFile()
+        self.combo = ttk.Combobox(self.frame, state="readonly", values=["GGR1", "GGR2", "GGR3", "GGR4", "GGR5"])
+        # # label
+        # ttk.Label(self.frame, text="Select the Month :",
+        #           font=("Times New Roman", 10)).grid(column=0,
+        #                                              row=5, padx=10, pady=25)
+        # # Combobox creation
+        # n = tk.StringVar()
+        # ggr_lst = ttk.Combobox(self.frame, width=27, textvariable=n)
+        # ggr_lst['values'] = ('GGR1', 'GGR2', 'GGR3', 'GGR4', 'GGR5')
+        # self.combo.bind("<<ComboboxSelected>>", self.handle_selection(event=self.btnGrrCalc.config(state=tk.ACTIVE)))
+        self.combo.set("GRR1")
+        # self.combo.place(x=5, y=5)
+        self.combo.pack(side='top', padx=5, pady=5, anchor="w")
         self.btnGrrCalc.pack(side='top', padx=10, pady=5, anchor="w")
         self.btnPages = tk.Button(self.frame, text="open pages", command=lambda: self.create_frames())
         self.btnPages.pack(side='top', padx=10, pady=5, anchor="w")
@@ -92,6 +106,7 @@ class StartPage:
         self.btnReadRxCalf5.config(state=tk.DISABLED)
         self.btnPages.config(state=tk.DISABLED)
         self.btnGrrCalc.config(state=tk.DISABLED)
+        self.combo.config(state=tk.DISABLED)
 
         self.txt = tk.Text(self.frameTxt, font=self.font, width=200, height=150, wrap=tk.WORD)
         self.txt.pack(side='left')
@@ -126,8 +141,15 @@ class StartPage:
         frame.tkraise()
 
     def calc_grr(self):
+        filepath = self.grr_filePath
+        pwd = self.path
         try:
-            Digest_utils.grr_cooking(self.grr_filePath, self.grr_spec)
+
+            # Asking user which grr csv
+            csv_ith = self.combo.get()[3] # need debug
+            csv_data_path = os.path.join(pwd, "DataCSV")
+            csv_data_path_select = os.path.join(csv_data_path, f'GRR{csv_ith}.csv')
+            Digest_utils.grr_cooking(f'{csv_data_path_select}')
             # file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
             # naming by user
         except Exception as e:
@@ -135,19 +157,28 @@ class StartPage:
 
     def open_grr_file(self):
         try:
-            self.grr_filePath = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
+            # self.grr_filePath = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
+            self.grr_filePath = filedialog.askopenfilename(filetypes=[("Xlsx files", "*.xlsx")])
             if self.grr_filePath:
                 grr_file_path = self.grr_filePath
                 self.info_manager.update_info("Read csv OK", f'File Path {self.grr_filePath}')
-                self.grr_spec = Digest_utils.grr_data_digest(grr_file_path)
+                count_csv = Digest_utils.grr_data_digest(grr_file_path, self.path)
+                g_file = [f'GRR{i+1},' for i in range(int(count_csv))]
+                self.info_manager.update_info("Create .csv", f'{repr(g_file)}.csv')
                 self.btnGrrCalc.config(state=tk.ACTIVE)
-                # self.info_manager.update_info("csv dimension", f'{csvShape}')
+                self.combo.config(state=tk.ACTIVE)
             else:
                 messagebox.showerror("No FILE", "Plz reload file")
                 return False
         except Exception as e:
+            messagebox.showerror("FILE_ERR", "Plz reload file")
             raise "open grr file NG >>> " + str(e.args)
         return True
+
+    def handle_selection(self, event=None):
+        selected_option = self.combo.get()
+        print("Selected option:", selected_option)
+        self.GGR_option = selected_option
 
     def choose_file(self):
         filePath = filedialog.askopenfilename()

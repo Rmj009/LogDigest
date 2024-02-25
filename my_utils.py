@@ -36,21 +36,25 @@ class Digest_utils:
             raise "grr_calculation" + str(e.args)
         return grr_value
 
-    def grr_cooking(filepath: str, grr_spec):
+    def grr_cooking(filepath: str):
         """
         split dataframe into A,B,C blocks
         :return:
         """
-        grr_lst = ["0"]  # ["GRR"]
+        grr_lst = ["NaN"]  # ["GRR"]
         current_time = datetime.datetime.now()
         formatted_time = current_time.strftime(f'%m%d_%H%M%S')
         try:
-            df = pd.read_csv(f'{filepath}', skiprows=4, header=None, index_col=0)
-            df = df.iloc[:, :-1]  # ignore last column
+            df = pd.read_csv(f'{filepath}', header=0, index_col=0)
+            spec_array = df.iloc[[0, 1]].values[:, 1:]
+
+            # df = pd.read_csv(f'{filepath}', skiprows=4, header=None, index_col=0)
+            # df = df.iloc[:, :-1]  # ignore last column
+            df = df.iloc[3:, :-1]  # ignore last column
 
             for i in range(df.shape[1] - 1):
                 select_arr_ith = np.array(df.iloc[:, i + 1]).reshape(10, 9)
-                grr_lst.append(Digest_utils.grr_calculation(select_arr_ith, grr_spec[:, i]))
+                grr_lst.append(Digest_utils.grr_calculation(select_arr_ith, spec_array[:, i]))
             df_result = pd.read_csv(f'{filepath}', header=0, index_col=0)
             df_result = df_result.iloc[:, :-1]
             grr_lst = [np.nan if val == '0' else float(val) for val in grr_lst]
@@ -64,36 +68,50 @@ class Digest_utils:
             raise "grr_cooking" + str(e.args)
         return "success"
 
-    def grr_data_digest(self: str) -> np.array:
-        window = 2
-        arr_weight = pd.DataFrame()
-        arr_result = pd.DataFrame()
-        df_result = pd.DataFrame()  # index=range(df.shape[0]), columns=range(df.shape[1])
-        arr_lst = []
-
+    def grr_data_digest(filepath: str, pwd) -> np.array:
+        # window = 2
+        # arr_weight = pd.DataFrame()
+        # arr_result = pd.DataFrame()
+        # df_result = pd.DataFrame()  # index=range(df.shape[0]), columns=range(df.shape[1])
+        # arr_lst = []
         try:
-            df = pd.read_csv(f'{self}', header=0, index_col=0)
-            df = df.iloc[:, :-1]  # ignore last column
-            loop_row_time = df.shape[0] // 9
-            df_spec_array = df.iloc[[0, 1]].values[:, 1:]
+            csv_data_path = os.path.join(pwd, "DataCSV")
+            if not os.path.exists(csv_data_path):
+                os.mkdir(csv_data_path)
+            print("Directory '% s' created" % csv_data_path)
+            # Read all sheets from the Excel file
+            xls = pd.ExcelFile(filepath)
+            sheet_names = xls.sheet_names
 
-            df_values = df.iloc[3: df.shape[0], 1: df.shape[1]]  # all values
-            for col in range(df_values.shape[1]):
-                nest_lst = []
-                for row in range(loop_row_time):  # dut_test_times per dut = 9
-                    arr_weight = pd.DataFrame(df_values.iloc[:9 * (row + 1), col])  # slice by _dut
-                    arr_weight = np.array(
-                        arr_weight.rolling(window, min_periods=(window // 2), center=True).mean().values)
-                    nest_lst.append(arr_weight)
-                    # arr = np.random.rand(3, 1)
-                    # nest_lst.append(arr)
-                    # arr_result = np.append(arr_result, arr_weight)
-                # df_result[f'{col}'] = arr_weight.tolist()
-                arr_lst.append(nest_lst)
-            flat_lst = [item for sublist in arr_lst for item in sublist]
-            df_result = pd.concat([pd.DataFrame(arr) for arr in flat_lst], axis=1)
+            # Iterate over each sheet and save it as a CSV file
+            for idx, sheet_name in enumerate(sheet_names):
+                df = pd.read_excel(xls, sheet_name)
+                csv_file_name = f'GRR{idx + 1}.csv'
+                csv_path_ = os.path.join(csv_data_path, csv_file_name)
+                df.to_csv(csv_path_, index=False)
+                print(f'Sheet "{sheet_name}" saved as "{csv_file_name}"')
+
+            all_csv_files = os.listdir(csv_data_path)
+            count_total_csv = sum(1 for file in all_csv_files if file.endswith('.csv'))
+
+            # df_values = df.iloc[3: df.shape[0], 1: df.shape[1]]  # all values
+            # loop_row_time = df.shape[0] // 9
+            # for col in range(df_values.shape[1]):
+            #     nest_lst = []
+            #     for row in range(loop_row_time):  # dut_test_times per dut = 9
+            #         arr_weight = pd.DataFrame(df_values.iloc[:9 * (row + 1), col])  # slice by _dut
+            #         arr_weight = np.array(
+            #             arr_weight.rolling(window, min_periods=(window // 2), center=True).mean().values)
+            #         nest_lst.append(arr_weight)
+            #         # arr = np.random.rand(3, 1)
+            #         # nest_lst.append(arr)
+            #         # arr_result = np.append(arr_result, arr_weight)
+            #     # df_result[f'{col}'] = arr_weight.tolist()
+            #     arr_lst.append(nest_lst)
+            # flat_lst = [item for sublist in arr_lst for item in sublist]
+            # df_result = pd.concat([pd.DataFrame(arr) for arr in flat_lst], axis=1)
             # df_result = pd.merge([pd.DataFrame(arr) for arr in flat_lst])
-            print(df_result)
+            # print(df_result)
 
             # for i in range(df.shape[1] - 1):
             #     select_arr_ith = np.array(df.iloc[:, i + 1]).reshape(10, 9)
@@ -104,29 +122,12 @@ class Digest_utils:
             #     grr_data = pd.DataFrame(df_testItem.values.reshape(3, 10, 3))
             #     grr_data.loc['A'].apply(lambda x: x.rolling(window=2).mean())
 
-            # /////////////////////////////////////////////////////////////////////
-            # for col_nth in df.columns:
-            #     mv2df[col_nth] = df[col_nth].rolling(window=2).mean()
-            # range_specLst = df_spec_array[0] - df_spec_array[1]
-            # print("Columns in the DataFrame:")
-            # for column in df.columns:
-            #     print(column)
-            # print("\nLooping through the data in each column:")
-            # for column in df.columns:
-            #     print(f"Column: {column}")
-            #     for value in df[column]:
-            #         print(value)
-            df_result.to_csv(f'weight{window}.csv', sep=',')
+            # df_result.to_csv(f'weight{window}.csv', sep=',')
         except Exception as e:
             raise "csv data under 90" + str(e.args)
-        return df_spec_array  # str(df.shape)
+        # return df_spec_array  # str(df.shape)
+        return count_total_csv
 
-    def cooking_moving_average(cols):
-        try:
-            mv_arr = cols
-        except Exception as e:
-            raise "_moving_average" + "NG >>>" + str(e.args)
-        return mv_arr  # str(df.shape)
 
     def convertToDf(*args) -> pd.DataFrame():
         delimiters = ('\t', ',')
