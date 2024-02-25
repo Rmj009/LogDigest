@@ -1,7 +1,6 @@
 from tkinter import filedialog, messagebox
 # from DigestData import PreManifest, DataUtils
-# from Gage import Gage
-from utils import utils
+from my_utils import Digest_utils
 import tkinter as tk
 # import glob
 import os
@@ -91,7 +90,8 @@ class StartPage:
         self.btnReadTxCalf6.config(state=tk.DISABLED)
         self.btnReadRxCalf32.config(state=tk.DISABLED)
         self.btnReadRxCalf5.config(state=tk.DISABLED)
-        # self.btnGrrCalc.config(state=tk.DISABLED)
+        self.btnPages.config(state=tk.DISABLED)
+        self.btnGrrCalc.config(state=tk.DISABLED)
 
         self.txt = tk.Text(self.frameTxt, font=self.font, width=200, height=150, wrap=tk.WORD)
         self.txt.pack(side='left')
@@ -127,7 +127,9 @@ class StartPage:
 
     def calc_grr(self):
         try:
-            utils.grr_cooking(self.grr_filePath, self.grr_spec)
+            Digest_utils.grr_cooking(self.grr_filePath, self.grr_spec)
+            # file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
+            # naming by user
         except Exception as e:
             raise "calculate GRR err >>> " + str(e.args)
 
@@ -135,8 +137,10 @@ class StartPage:
         try:
             self.grr_filePath = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
             if self.grr_filePath:
+                grr_file_path = self.grr_filePath
                 self.info_manager.update_info("Read csv OK", f'File Path {self.grr_filePath}')
-                self.grr_spec = utils.grr_data_digest(self.grr_filePath)
+                self.grr_spec = Digest_utils.grr_data_digest(grr_file_path)
+                self.btnGrrCalc.config(state=tk.ACTIVE)
                 # self.info_manager.update_info("csv dimension", f'{csvShape}')
             else:
                 messagebox.showerror("No FILE", "Plz reload file")
@@ -152,7 +156,7 @@ class StartPage:
             try:
                 with open(filePath, 'r') as file:
                     content = file.read()
-                    df = utils.convertToDf(content)
+                    df = Digest_utils.convertToDf(content)
                     df.to_csv(os.path.join(self.path, f'RawData.csv'), sep=',', encoding='UTF-8')
                     self.info_manager.update_info(f'Save Raw DataFrame in the Data Folder', "OK")
                     self.btnReadWifiTx.config(state=tk.ACTIVE)
@@ -176,13 +180,13 @@ class StartPage:
 
     def ReadRawData(self, *args):
         table_mapping = {
-            "Rx": {"func": utils.makeRxTable, "message": "WifiRx"},
-            "Tx": {"func": utils.makeTxTable, "message": "WifiTx"},
-            "BeamForm": {"func": utils.makeBeamFormTable, "message": "Wifi_BeamForm"},
-            "TxCalf33": {"func": utils.makeWifiTxCalib33, "message": "Wifi Tx Calib33"},
-            "TxCalf6": {"func": utils.makeWifiTxCalib6, "message": "Wifi Tx Calib6"},
-            "RxCalf32": {"func": utils.makeWifiRxCalib32, "message": "Wifi Tx RxCalf32"},
-            "RxCalf5": {"func": utils.makeWifiRxCalib5, "message": "Wifi Tx RxCalf5"}
+            "Rx": {"func": Digest_utils.makeRxTable, "message": "WifiRx"},
+            "Tx": {"func": Digest_utils.makeTxTable, "message": "WifiTx"},
+            "BeamForm": {"func": Digest_utils.makeBeamFormTable, "message": "Wifi_BeamForm"},
+            "TxCalf33": {"func": Digest_utils.makeWifiTxCalib33, "message": "Wifi Tx Calib33"},
+            "TxCalf6": {"func": Digest_utils.makeWifiTxCalib6, "message": "Wifi Tx Calib6"},
+            "RxCalf32": {"func": Digest_utils.makeWifiRxCalib32, "message": "Wifi Tx RxCalf32"},
+            "RxCalf5": {"func": Digest_utils.makeWifiRxCalib5, "message": "Wifi Tx RxCalf5"}
         }
 
         if args[0] in table_mapping:
