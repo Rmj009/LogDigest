@@ -30,40 +30,46 @@ class Digest_utils:
             grr_data = [A_op, B_op, C_op]
 
             grr_instance = Gage(grr_data, LSL, USL)
-            grr_value = grr_instance.rawData_handling(grr_data)
+            grr_value = grr_instance.cooking_grr(grr_data)
         except Exception as e:
-            raise "grr_calculation" + str(e.args)
+            raise "grr_calculation NG >>> " + str(e.args)
         return grr_value
 
-    def grr_cooking(filepath: str, avg_weigh: str):
+    def grr_cooking(filepath: str, avg_weigh: int):
         """
         split dataframe into A,B,C blocks
         :return:
         """
-        grr_lst = ["NaN"]  # ["GRR"]
-        avg_lst = []
+        grr_lst = [f'GRR{avg_weigh}']
+        avg_lst = [f'AVG{avg_weigh}']
         current_time = datetime.datetime.now()
         formatted_time = current_time.strftime(f'%H%M%S')
         try:
             df = pd.read_csv(f'{filepath}', header=0, index_col=0)
             spec_array = df.iloc[[0, 1]].values[:, 1:]
-            df = df.iloc[3:, :-1]  # ignore last column
-
+            df = df.iloc[2:, :-1]  # ignore last column
+            # summary_path = os.path.join(filepath, "Summary")
+            # if not os.path.exists(summary_path):
+            #     os.mkdir(summary_path)
             for i in range(df.shape[1] - 1):
                 select_arr_ith = np.array(df.iloc[:, i + 1]).reshape(10, 9)
-                avg_lst.append(np.mean(df.iloc[:, i + 1]))
+                avg_lst.append(np.mean(select_arr_ith))
                 grr_lst.append(Digest_utils.grr_calculation(select_arr_ith, spec_array[:, i]))
-            df_result = pd.read_csv(f'{filepath}', header=0, index_col=0)
-            df_result = df_result.iloc[:, :-1]
-            grr_lst = [np.nan if val == 'NAN' else float(val) for val in grr_lst]
-            df_result.loc['AVG'] = np.array(avg_lst)
-            df_result.loc['GRR'] = np.array(grr_lst)
-            df_result = pd.DataFrame(df_result)
+            df_result = pd.read_csv(f'{filepath}', header=0)
+            df_result = df_result.iloc[:, :-1]  # remove last col fixture
+            # grr_lst = [np.nan if val == 'NAN' else float(val) for val in grr_lst]
+            grr_lst.insert(0, f'GRR{avg_weigh}')  # GRR as row name
+            avg_lst.insert(0, f'AVG{avg_weigh}')  # AVG as row name
+            df_result.index = df_result.index[:2].tolist() + (df_result.index[2:] + 1).tolist()
+            df_result.loc[2] = np.array(grr_lst)
+            df_result.index = df_result.index[:2].tolist() + (df_result.index[2:] + 1).tolist()
+            df_result.loc[2] = np.array(avg_lst)
+            df_result = df_result.sort_index()
             df_result.to_csv(f'GRR_avg{avg_weigh}_{formatted_time}.csv', sep=',')
             # df_result = pd.concat([df.iloc[:3], result, df.iloc[3:]]).reset_index(drop=True)
 
         except Exception as e:
-            raise "grr_cooking" + str(e.args)
+            raise "grr_cooking NG >>> " + str(e.args)
         return "success"
 
     def grr_data_digest(filepath: str, pwd) -> np.array:
@@ -163,20 +169,33 @@ class Digest_utils:
         except Exception as e:
             raise "digest_by_openpyxl NG >>>" + str(e.args)
 
-
     def grr_summary(self, *args):
+        arr_result = []
+        current_time = datetime.datetime.now()
+        formatted_time = current_time.strftime(f'%H%M%S')
         try:
-            np.nan, file_path = args
-            summary_path = os.path.join(file_path, "Summary")
+            file_path = args
+            summary_path = os.path.join(file_path[0], "Summary")
             if not os.path.exists(summary_path):
                 os.mkdir(summary_path)
             grr_files = os.listdir(summary_path)
+            for file in grr_files:
+                if file.endswith(".csv"):
+                    file_path = os.path.join(summary_path, file)
+                df = pd.read_csv(file_path, header=0, index_col=0)
+                df_select = df.iloc[2:4, 1:]
+                df_select = df_select.T
+                df_select.columns = df_select.iloc[0]
+                df_select.drop(df_select.index[0])
+                arr_result.append(df_select)
+
+            df_result = pd.concat([pd.DataFrame(arr) for arr in arr_result], axis=1)
+            df_result = df_result.sort_index(axis=1)
+            df_result.to_csv(f'GRR_Summary_{formatted_time}.csv', sep=',')
 
         except Exception as e:
             raise "grr_summary NG >>> " + str(e.args)
         return ""
-
-
 
     def convertToDf(*args) -> pd.DataFrame():
         delimiters = ('\t', ',')

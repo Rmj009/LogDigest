@@ -94,34 +94,37 @@ class Gage:
 
         except Exception as e:
             raise print(" -------------- Gage Variance -------------- \r\n" + str(e.args))
-        return grr_tolerance
+        return np.nan if np.isnan(F3) else grr_tolerance
 
-    def rawData_handling(self, *args):
+    @staticmethod
+    def cooking_mean(arr_3d: np.array, grr_shape0, grr_shape1, grr_shape2):
+        try:
+            overall_average = np.nan if np.isnan(np.mean(arr_3d)) else np.mean(arr_3d)
+            op_mean_lst = [np.mean(arr_3d[x]) for x in range(grr_shape2)]  # shape >>> (3, 10, 3)
+            dut_op_mean_lst = [np.mean(arr_3d[i], axis=1) for i in range(grr_shape0)]
+            dut_mean_lst = [np.mean([arr_3d[0][i], arr_3d[1][i], arr_3d[2][i]]) for i in range(grr_shape1)]  # Average of DUT_A, Average of DUT_B, Average of DUT_C
+            # print("OP-mean", op_mean_lst)  # Average of DUT_A, Average of DUT_B, Average of DUT_C
+            # print("Average of DUT:", overall_average)
+            # print("dut_op_mean_lst:", dut_op_mean_lst)
+            # print("dut_mean_lst:", dut_mean_lst)
+        except Exception as ex:
+            print(" cooking_mean NG >>> " + str(ex.args))
+            raise ex.args
+        return overall_average, op_mean_lst, dut_op_mean_lst, dut_mean_lst
+
+    def cooking_grr(self, *args):
+        RR_A = []
+        RR_B = []
+        RR_C = []
         try:
             arr_3d = np.array(self.data)
             grr_shape0 = arr_3d.shape[0]
             grr_shape1 = arr_3d.shape[1]
             grr_shape2 = arr_3d.shape[2]
-            overall_average = np.nan if np.isnan(np.mean(arr_3d)) else np.mean(arr_3d)
 
-            op_mean_lst = [np.mean(arr_3d[x]) for x in range(grr_shape2)]  # shape >>> (3, 10, 3)
-
-            if overall_average == 0:
-                return np.nan
-            # Initialize arrays to store squared differences
-            RR_A = []
-            RR_B = []
-            RR_C = []
-            dut_op_mean_lst = [np.mean(arr_3d[i], axis=1) for i in range(grr_shape0)]
-            # [np.mean(arr_3d[0][i][j], 0) for j in range(grr_shape2) for i in range(arr_3d.shape[3])]
-            # Average of DUT_A, Average of DUT_B, Average of DUT_C
-            # print("OP-mean", op_mean_lst)
-            # print("Average of DUT:", overall_average)
-            # print("dut_op_mean_lst:", dut_op_mean_lst)
+            overall_average, op_mean_lst, dut_op_mean_lst, dut_mean_lst = Gage.cooking_mean(arr_3d, grr_shape0, grr_shape1, grr_shape2)
             overall_trans = [(i - overall_average) ** 2 for i in arr_3d]  # total transform
             # print("RR_trans:", overall_trans)
-
-            # Calculate squared differences for each element in the first row
             for j in range(grr_shape1):
                 for i in range(grr_shape2):
                     squared_diff_A = (arr_3d[0][j][i] - float(dut_op_mean_lst[0][j])) ** 2
@@ -134,7 +137,6 @@ class Gage:
                     RR_A.append(squared_diff_A)
                     RR_B.append(squared_diff_B)
                     RR_C.append(squared_diff_C)
-
             # Calculate sums of squared differences
             RR_A_sum = np.sum(RR_A)
             RR_B_sum = np.sum(RR_B)
@@ -142,19 +144,10 @@ class Gage:
             # print("RR_A:", RR_A_sum)
             # print("RR_B:", RR_B_sum)
             # print("RR_C:", RR_C_sum)
-            # =================================================================================
             # --------------------- Sum of square -----------------------------
-            dut_mean_lst = [np.mean([arr_3d[0][i], arr_3d[1][i], arr_3d[2][i]]) for i in
-                            range(grr_shape1)]
-            # Average of DUT_A, Average of DUT_B, Average of DUT_C
             # number of test time of dut
             dut_test_times = int(len(arr_3d[0][0])) + int(len(arr_3d[1][0])) + int(len(arr_3d[2][0]))
-
-            SS_DUT = [(dut_mean_lst[i] - np.mean(dut_mean_lst)) ** 2 * dut_test_times for i in
-                      range(grr_shape1)]
-            # print("dut_mean_lst:", dut_mean_lst)
-            # print("dut_test_times", dut_test_times)
-            # print("SS_DUT: ", np.sum(SS_DUT))
+            SS_DUT = [(dut_mean_lst[i] - np.mean(dut_mean_lst)) ** 2 * dut_test_times for i in range(grr_shape1)]
 
             SS_OP_A = grr_shape1 * grr_shape2 * (op_mean_lst[0] - overall_average) ** 2
             SS_OP_B = grr_shape1 * grr_shape2 * (op_mean_lst[1] - overall_average) ** 2
@@ -163,12 +156,12 @@ class Gage:
             SS_total = np.sum(overall_trans)
             SS_Repeatability = np.sum([RR_A_sum, RR_B_sum, RR_C_sum])
             SS_DUT_op = SS_total - SS_Repeatability - SS_OP - np.sum(SS_DUT)
-
+            # print("dut_test_times", dut_test_times)
+            # print("SS_DUT: ", np.sum(SS_DUT))
             # print("SS_total: ", SS_total)
             # print("SS_OP: ", SS_OP)
             # print("SS_Repeatability: ", SS_Repeatability)
             # print("SS_DUT_op: ", SS_DUT_op)
-
             # --------------------- twoWay anova -----------------------------
             # Table 1 with interaction
             df_dut = grr_shape1 - 1
@@ -182,6 +175,8 @@ class Gage:
             F1 = np.nan if np.isnan(MS_0 / MS_2) else MS_0 / MS_2
             F2 = np.nan if np.isnan(MS_1 / MS_2) else MS_1 / MS_2
             F3 = np.nan if np.isnan(MS_2 / MS_3) else MS_2 / MS_3
+            if np.isnan([F1, F2, F3]).any():
+                return np.nan
             p_value1 = 1 - f.cdf(F1, df_dut, df_repeat)
             p_value2 = 1 - f.cdf(F2, df_op, df_repeat)
             p_value3 = 1 - f.cdf(F3, df_dut_op, df_repeat)
@@ -194,20 +189,12 @@ class Gage:
             F2_t2 = np.nan if np.isnan(MS_1_t2 / MS_2_t2) else MS_1_t2 / MS_2_t2
             p_value1_t2 = 1 - f.cdf(F1_t2, df_dut, (df_repeat + df_dut_op))
             p_value2_t2 = 1 - f.cdf(F2_t2, df_op, (df_repeat + df_dut_op))
-            # print("MS_0: ", MS_0)
-            # print("MS_1: ", MS_1)
-            # print("MS_2: ", MS_2)
-            # print("MS_3: ", MS_3)
             # print("F1: ", F1)
             # print("F2: ", F2)
             # print("F3: ", F3)
             # print("p_value1: ", p_value1)
             # print("p_value2: ", p_value2)
             # print("p_value3: ", p_value3)
-
-            # print("MS_0_t2: ", MS_0_t2)
-            # print("MS_1_t2: ", MS_1_t2)
-            # print("MS_2_t2: ", MS_2_t2)
             # print("F1_t2: ", F1_t2)
             # print("F2_t2: ", F2_t2)
             # print("p_value1_t2: ", p_value1_t2)

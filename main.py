@@ -51,7 +51,7 @@ class StartPage:
         self.frameTxt = tk.Frame(self.root, bg='gray78', width=100, height=160)
         self.frameTxt.pack(side='right', fill=tk.BOTH, expand=False)
 
-        self.label = tk.Label(self.frame, font=('Times', 20, 'bold'), text="Load txt before output file!",
+        self.label = tk.Label(self.frame, font=('Times', 20, 'bold'), text="File selection",
                               justify='left')
         self.label.pack(side='top', padx=5, pady=5)
         self.btnOpen = tk.Button(self.frame, text="Open", command=lambda: self.open_grr_file())  # self.chooseFile()
@@ -70,7 +70,7 @@ class StartPage:
         # self.combo.bind("<<ComboboxSelected>>", self.handle_selection(event=self.btnGrrCalc.config(state=tk.ACTIVE)))
         self.combo.set("GRR1")
         # self.combo.place(x=5, y=5)
-        self.combo.pack(side='top', padx=5, pady=5, anchor="w")
+        # self.combo.pack(side='top', padx=5, pady=5, anchor="w")
         self.btnGrrCalc.pack(side='top', padx=10, pady=5, anchor="w")
         self.btnSummaryGRR = tk.Button(self.frame, text="Summary GRR", command=lambda: self.summary_grr())
         self.btnSummaryGRR.pack(side='top', padx=10, pady=5, anchor="w")
@@ -108,6 +108,7 @@ class StartPage:
         # self.btnReadRxCalf5.config(state=tk.DISABLED)
         self.btnPages.config(state=tk.DISABLED)
         self.btnGrrCalc.config(state=tk.DISABLED)
+        # self.btnSummaryGRR.config(state=tk.DISABLED)
         self.combo.config(state=tk.DISABLED)
 
         self.txt = tk.Text(self.frameTxt, font=self.font, width=200, height=150, wrap=tk.WORD)
@@ -145,23 +146,26 @@ class StartPage:
     def summary_grr(self):
         try:
             my_utils = Digest_utils()
-            result = my_utils.grr_summary("info", self.path)
-            self.info_manager.update_info("Summary GRR", f'{result}')
+            my_utils.grr_summary(self.path)
+            self.info_manager.update_info("Summary GRR", "Success")
         except Exception as e:
             messagebox.showerror("Summary NG", "Plz retry")
             raise "summary_grr NG >>> " + str(e.args)
-
 
     def calc_grr(self):
         filepath = self.grr_filePath
         pwd = self.path
         try:
             # Asking user which grr csv
-            csv_ith = self.combo.get()[3]  # need debug
+            # csv_ith = self.combo.get()[3]  # need debug
             csv_data_path = os.path.join(pwd, "DataCSV")
-            csv_data_path_select = os.path.join(csv_data_path, f'GRR{csv_ith}.csv')
-            Digest_utils.grr_cooking(f'{csv_data_path_select}', csv_ith)
+            grr_csv_ = os.listdir(csv_data_path)
+            # Digest_utils.grr_cooking(f'{csv_data_path_select}', csv_ith)
+            for csv_ith, csv in enumerate(grr_csv_):
+                csv_path_select = os.path.join(csv_data_path, f'{csv}')
+                Digest_utils.grr_cooking(csv_path_select, csv_ith)
             self.info_manager.update_info("Output Gage R&R csv", f'{pwd}')
+            self.btnSummaryGRR.config(state=tk.ACTIVE)
         except Exception as e:
             raise "calculate GRR err >>> " + str(e.args)
 
