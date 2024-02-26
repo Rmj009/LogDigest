@@ -1,11 +1,10 @@
 import datetime
 import os
+import csv
 import numpy as np
 import pandas as pd
 from Gage import Gage
-
-
-# import openpyxl
+from openpyxl import load_workbook
 
 
 class Digest_utils:
@@ -36,32 +35,31 @@ class Digest_utils:
             raise "grr_calculation" + str(e.args)
         return grr_value
 
-    def grr_cooking(filepath: str):
+    def grr_cooking(filepath: str, avg_weigh: str):
         """
         split dataframe into A,B,C blocks
         :return:
         """
         grr_lst = ["NaN"]  # ["GRR"]
+        avg_lst = []
         current_time = datetime.datetime.now()
-        formatted_time = current_time.strftime(f'%m%d_%H%M%S')
+        formatted_time = current_time.strftime(f'%H%M%S')
         try:
             df = pd.read_csv(f'{filepath}', header=0, index_col=0)
             spec_array = df.iloc[[0, 1]].values[:, 1:]
-
-            # df = pd.read_csv(f'{filepath}', skiprows=4, header=None, index_col=0)
-            # df = df.iloc[:, :-1]  # ignore last column
             df = df.iloc[3:, :-1]  # ignore last column
 
             for i in range(df.shape[1] - 1):
                 select_arr_ith = np.array(df.iloc[:, i + 1]).reshape(10, 9)
+                avg_lst.append(np.mean(df.iloc[:, i + 1]))
                 grr_lst.append(Digest_utils.grr_calculation(select_arr_ith, spec_array[:, i]))
             df_result = pd.read_csv(f'{filepath}', header=0, index_col=0)
             df_result = df_result.iloc[:, :-1]
-            grr_lst = [np.nan if val == '0' else float(val) for val in grr_lst]
+            grr_lst = [np.nan if val == 'NAN' else float(val) for val in grr_lst]
+            df_result.loc['AVG'] = np.array(avg_lst)
             df_result.loc['GRR'] = np.array(grr_lst)
-
             df_result = pd.DataFrame(df_result)
-            df_result.to_csv(f'GGR__{formatted_time}.csv', sep=',')
+            df_result.to_csv(f'GRR_avg{avg_weigh}_{formatted_time}.csv', sep=',')
             # df_result = pd.concat([df.iloc[:3], result, df.iloc[3:]]).reset_index(drop=True)
 
         except Exception as e:
@@ -78,7 +76,16 @@ class Digest_utils:
             csv_data_path = os.path.join(pwd, "DataCSV")
             if not os.path.exists(csv_data_path):
                 os.mkdir(csv_data_path)
-            print("Directory '% s' created" % csv_data_path)
+                print("Directory '% s' created" % csv_data_path)
+            else:
+                all_csv = os.listdir(csv_data_path)
+                for file in all_csv:
+                    if file.endswith(".csv"):
+                        file_path = os.path.join(csv_data_path, file)
+                        os.remove(file_path)
+                        print(f'remove csv >>>{file_path}')
+
+            # Digest_utils.digest_by_openpyxl(filepath)
             # Read all sheets from the Excel file
             xls = pd.ExcelFile(filepath)
             sheet_names = xls.sheet_names
@@ -88,6 +95,14 @@ class Digest_utils:
                 df = pd.read_excel(xls, sheet_name)
                 csv_file_name = f'GRR{idx + 1}.csv'
                 csv_path_ = os.path.join(csv_data_path, csv_file_name)
+                # -----------------------------------
+                # create new index shifted for GRR, AGV row
+                # df.index = df.index[:2].tolist() + (df.index[2:] + 1).tolist()
+                # df.loc[2] = np.where(df.iloc[2, 0] != "AGV", "AGV", "NAN")
+                # df.index = df.index[:3].tolist() + (df.index[3:] + 1).tolist()
+                # df.loc[3] = np.where(df.iloc[3, 0] != "GRR", "GRR", "NAN")
+                # df = df.sort_index()
+                # -----------------------------------
                 df.to_csv(csv_path_, index=False)
                 print(f'Sheet "{sheet_name}" saved as "{csv_file_name}"')
 
@@ -124,9 +139,43 @@ class Digest_utils:
 
             # df_result.to_csv(f'weight{window}.csv', sep=',')
         except Exception as e:
-            raise "csv data under 90" + str(e.args)
+            raise "grr_data_digest NG >>>" + str(e.args)
         # return df_spec_array  # str(df.shape)
         return count_total_csv
+
+    @staticmethod
+    def digest_by_openpyxl(path):
+        try:
+            wb = load_workbook(path)
+
+            # Iterate over each sheet in the workbook
+            for sheet in wb.sheetnames:
+                # Create a new CSV file for each sheet
+                with open(f'{sheet}.csv', 'w', newline='') as csvfile:
+                    csvwriter = csv.writer(csvfile)
+
+                    # Copy the data from the original sheet to the CSV file
+                    for row in wb[sheet].iter_rows(values_only=True):
+                        csvwriter.writerow(row)
+
+                    # Insert a row with only one value in the first cell
+                    csvwriter.writerow(['Your Value'])  # Insert your desired value here
+        except Exception as e:
+            raise "digest_by_openpyxl NG >>>" + str(e.args)
+
+
+    def grr_summary(self, *args):
+        try:
+            np.nan, file_path = args
+            summary_path = os.path.join(file_path, "Summary")
+            if not os.path.exists(summary_path):
+                os.mkdir(summary_path)
+            grr_files = os.listdir(summary_path)
+
+        except Exception as e:
+            raise "grr_summary NG >>> " + str(e.args)
+        return ""
+
 
 
     def convertToDf(*args) -> pd.DataFrame():

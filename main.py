@@ -72,38 +72,40 @@ class StartPage:
         # self.combo.place(x=5, y=5)
         self.combo.pack(side='top', padx=5, pady=5, anchor="w")
         self.btnGrrCalc.pack(side='top', padx=10, pady=5, anchor="w")
+        self.btnSummaryGRR = tk.Button(self.frame, text="Summary GRR", command=lambda: self.summary_grr())
+        self.btnSummaryGRR.pack(side='top', padx=10, pady=5, anchor="w")
         self.btnPages = tk.Button(self.frame, text="open pages", command=lambda: self.create_frames())
         self.btnPages.pack(side='top', padx=10, pady=5, anchor="w")
-        self.btnReadWifiTx = tk.Button(self.frame, text="Yield WIFI_TX_table", command=lambda: self.ReadRawData("Tx"))
-        self.btnReadWifiTx.pack(side='top', padx=10, pady=5, anchor="w")
-        self.btnReadWifiRx = tk.Button(self.frame, text="Yield WIFI_RX_table", command=lambda: self.ReadRawData("Rx"))
-        self.btnReadWifiRx.pack(side='top', padx=10, pady=5, anchor="w")
-        self.btnReadWifiBeam = tk.Button(self.frame, text="Yield WIFI_Beam_table",
-                                         command=lambda: self.ReadRawData("BeamForm"))
-        self.btnReadWifiBeam.pack(side='top', padx=10, pady=5, anchor="w")
+        # self.btnReadWifiTx = tk.Button(self.frame, text="Yield WIFI_TX_table", command=lambda: self.ReadRawData("Tx"))
+        # self.btnReadWifiTx.pack(side='top', padx=10, pady=5, anchor="w")
+        # self.btnReadWifiRx = tk.Button(self.frame, text="Yield WIFI_RX_table", command=lambda: self.ReadRawData("Rx"))
+        # self.btnReadWifiRx.pack(side='top', padx=10, pady=5, anchor="w")
+        # self.btnReadWifiBeam = tk.Button(self.frame, text="Yield WIFI_Beam_table",
+        #                                  command=lambda: self.ReadRawData("BeamForm"))
+        # self.btnReadWifiBeam.pack(side='top', padx=10, pady=5, anchor="w")
         # self.btnClean = tk.Button(self.frame, text="Clean Data", command=lambda: self.ReadRawData(""))
         # self.btnClean.pack(side='top', padx=10, pady=5)
-        self.btnReadTxCalf33 = tk.Button(self.frame, text="Yield Tx Calibration 33",
-                                         command=lambda: self.ReadRawData("TxCalf33"))
-        self.btnReadTxCalf33.pack(side='top', padx=10, pady=5, anchor="w")
-        self.btnReadTxCalf6 = tk.Button(self.frame, text="Yield Tx Calibration 6",
-                                        command=lambda: self.ReadRawData("TxCalf6"))
-        self.btnReadTxCalf6.pack(side='top', padx=10, pady=5, anchor="w")
-        self.btnReadRxCalf32 = tk.Button(self.frame, text="Yield Rx Calibration 32",
-                                         command=lambda: self.ReadRawData("RxCalf32"))
-        self.btnReadRxCalf32.pack(side='top', padx=10, pady=5, anchor="w")
-        self.btnReadRxCalf5 = tk.Button(self.frame, text="Yield Rx Calibration 5",
-                                        command=lambda: self.ReadRawData("RxCalf5"))
-        self.btnReadRxCalf5.pack(side='top', padx=10, pady=5, anchor="w")
+        # self.btnReadTxCalf33 = tk.Button(self.frame, text="Yield Tx Calibration 33",
+        #                                  command=lambda: self.ReadRawData("TxCalf33"))
+        # self.btnReadTxCalf33.pack(side='top', padx=10, pady=5, anchor="w")
+        # self.btnReadTxCalf6 = tk.Button(self.frame, text="Yield Tx Calibration 6",
+        #                                 command=lambda: self.ReadRawData("TxCalf6"))
+        # self.btnReadTxCalf6.pack(side='top', padx=10, pady=5, anchor="w")
+        # self.btnReadRxCalf32 = tk.Button(self.frame, text="Yield Rx Calibration 32",
+        #                                  command=lambda: self.ReadRawData("RxCalf32"))
+        # self.btnReadRxCalf32.pack(side='top', padx=10, pady=5, anchor="w")
+        # self.btnReadRxCalf5 = tk.Button(self.frame, text="Yield Rx Calibration 5",
+        #                                 command=lambda: self.ReadRawData("RxCalf5"))
+        # self.btnReadRxCalf5.pack(side='top', padx=10, pady=5, anchor="w")
         self.btnExit = tk.Button(self.frame, text="Close Window", command=lambda: self.root.quit())
         self.btnExit.pack(side='bottom', padx=10, pady=5, anchor="sw")
-        self.btnReadWifiTx.config(state=tk.DISABLED)
-        self.btnReadWifiRx.config(state=tk.DISABLED)
-        self.btnReadWifiBeam.config(state=tk.DISABLED)
-        self.btnReadTxCalf33.config(state=tk.DISABLED)
-        self.btnReadTxCalf6.config(state=tk.DISABLED)
-        self.btnReadRxCalf32.config(state=tk.DISABLED)
-        self.btnReadRxCalf5.config(state=tk.DISABLED)
+        # self.btnReadWifiTx.config(state=tk.DISABLED)
+        # self.btnReadWifiRx.config(state=tk.DISABLED)
+        # self.btnReadWifiBeam.config(state=tk.DISABLED)
+        # self.btnReadTxCalf33.config(state=tk.DISABLED)
+        # self.btnReadTxCalf6.config(state=tk.DISABLED)
+        # self.btnReadRxCalf32.config(state=tk.DISABLED)
+        # self.btnReadRxCalf5.config(state=tk.DISABLED)
         self.btnPages.config(state=tk.DISABLED)
         self.btnGrrCalc.config(state=tk.DISABLED)
         self.combo.config(state=tk.DISABLED)
@@ -140,30 +142,37 @@ class StartPage:
         frame = self.frames[cont]
         frame.tkraise()
 
+    def summary_grr(self):
+        try:
+            my_utils = Digest_utils()
+            result = my_utils.grr_summary("info", self.path)
+            self.info_manager.update_info("Summary GRR", f'{result}')
+        except Exception as e:
+            messagebox.showerror("Summary NG", "Plz retry")
+            raise "summary_grr NG >>> " + str(e.args)
+
+
     def calc_grr(self):
         filepath = self.grr_filePath
         pwd = self.path
         try:
-
             # Asking user which grr csv
-            csv_ith = self.combo.get()[3] # need debug
+            csv_ith = self.combo.get()[3]  # need debug
             csv_data_path = os.path.join(pwd, "DataCSV")
             csv_data_path_select = os.path.join(csv_data_path, f'GRR{csv_ith}.csv')
-            Digest_utils.grr_cooking(f'{csv_data_path_select}')
-            # file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
-            # naming by user
+            Digest_utils.grr_cooking(f'{csv_data_path_select}', csv_ith)
+            self.info_manager.update_info("Output Gage R&R csv", f'{pwd}')
         except Exception as e:
             raise "calculate GRR err >>> " + str(e.args)
 
     def open_grr_file(self):
         try:
-            # self.grr_filePath = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
             self.grr_filePath = filedialog.askopenfilename(filetypes=[("Xlsx files", "*.xlsx")])
             if self.grr_filePath:
                 grr_file_path = self.grr_filePath
                 self.info_manager.update_info("Read csv OK", f'File Path {self.grr_filePath}')
                 count_csv = Digest_utils.grr_data_digest(grr_file_path, self.path)
-                g_file = [f'GRR{i+1},' for i in range(int(count_csv))]
+                g_file = [f'GRR{i + 1},' for i in range(int(count_csv))]
                 self.info_manager.update_info("Create .csv", f'{repr(g_file)}.csv')
                 self.btnGrrCalc.config(state=tk.ACTIVE)
                 self.combo.config(state=tk.ACTIVE)

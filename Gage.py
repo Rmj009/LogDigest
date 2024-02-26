@@ -39,10 +39,9 @@ class Gage:
             raise ex.args
 
     def grr_variance(self, *args):
-
+        # -------------- GRR_Variance --------------
         range_spec, grr_shape1, grr_shape2, MS_0, MS_1, MS_2, MS_3, MS_0_t2, MS_1_t2, MS_2_t2, p_value1, p_value3, F3 = args
         try:
-            # -------------- GRR_Variance --------------
             varComp_Repeatability = MS_2_t2 if F3 > 0.05 else MS_3
             if MS_1_t2 > MS_2_t2:
                 ans1 = (MS_1_t2 - MS_2_t2) / (grr_shape1 * grr_shape2)
@@ -56,24 +55,14 @@ class Gage:
             if p_value3 > 0.05:
                 # print("p_value greater than alpha 0.05")
                 varComp_op = ans1
-                # print("varComp_op: ", varComp_op)
-                # ------------
                 varComp_op_dut = 0
-                # print("varComp_op_dut: ", varComp_op_dut)
-                # ------------
                 if MS_0_t2 > MS_1_t2:
                     varComp_part_to_part = (MS_0_t2 - MS_2_t2) / (3 * 3)  # ???????
                 else:
                     varComp_part_to_part = 0
-                    # print("varComp_part_to_part: ", varComp_part_to_part)
-
             else:
                 varComp_op = ans2
-                # print("varComp_op: ", varComp_op)
-                # -----------
                 varComp_op_dut = (MS_3 - MS_2) / grr_shape2
-                # print("varComp_op_dut: ", varComp_op_dut)
-                # -----------
                 if MS_0 > MS_3:
                     varComp_part_to_part = (MS_0 - MS_2) / (3 * 3)  # ???????
                 else:
@@ -85,26 +74,29 @@ class Gage:
             reproducibility = varComp_op if p_value1 > 0.05 else (varComp_op + varComp_op_dut)
             repeatability = varComp_Repeatability ** (1 / 2)
             # total_GageRR = (varComp_reproducibility ** 2 + varComp_Repeatability ** 2) ** (1 / 2)
+            # Gage.grr_contribution(self, result)
+            reproducibility = varComp_op if p_value1 > 0.05 else (varComp_op + varComp_op_dut)
+            repeatability = varComp_Repeatability ** (1 / 2)
+            total_RageRR = (reproducibility ** 2 + repeatability ** 2) ** (1 / 2)
+            grr_tolerance = total_RageRR * 6 / range_spec * 100
+            # print("varComp_op: ", varComp_op)
+            # print("varComp_op_dut: ", varComp_op_dut)
+            # print("varComp_part_to_part: ", varComp_part_to_part)
+            # print("varComp_op: ", varComp_op)
+            # print("varComp_op_dut: ", varComp_op_dut)
             # print("varComp_Repeatability: ", varComp_Repeatability)
             # print("varComp_reproducibility: ", varComp_reproducibility)
             # print("varComp_part_to_part: ", varComp_part_to_part)
             # print("varComp_total_RageRR: ", varComp_total_RageRR)
             # print("varComp_total_variation: ", varComp_total_variation)
-            # Gage.grr_contribution(self, result)
-            reproducibility = varComp_op if p_value1 > 0.05 else (varComp_op + varComp_op_dut)
-            repeatability = varComp_Repeatability ** (1 / 2)
-            total_RageRR = (reproducibility ** 2 + repeatability ** 2) ** (1 / 2)
             # print("Grr: ", total_RageRR * 6)
-            grr_tolerance = total_RageRR * 6 / range_spec * 100
+            # print("grr_tolerance: ", grr_tolerance)
 
         except Exception as e:
             raise print(" -------------- Gage Variance -------------- \r\n" + str(e.args))
         return grr_tolerance
 
     def rawData_handling(self, *args):
-        # A_op = np.array(self.data)
-        # B_op = np.array(self.data)
-        # C_op = np.array(self.data)
         try:
             arr_3d = np.array(self.data)
             grr_shape0 = arr_3d.shape[0]
@@ -190,7 +182,7 @@ class Gage:
             F1 = np.nan if np.isnan(MS_0 / MS_2) else MS_0 / MS_2
             F2 = np.nan if np.isnan(MS_1 / MS_2) else MS_1 / MS_2
             F3 = np.nan if np.isnan(MS_2 / MS_3) else MS_2 / MS_3
-            p_value1 = 1 - f.cdf(F1, df_dut, df_repeat)  # 0.6524410065803709
+            p_value1 = 1 - f.cdf(F1, df_dut, df_repeat)
             p_value2 = 1 - f.cdf(F2, df_op, df_repeat)
             p_value3 = 1 - f.cdf(F3, df_dut_op, df_repeat)
             ## https: // www.geeksforgeeks.org / how - to - perform - an - f - test - in -python /
@@ -225,58 +217,6 @@ class Gage:
             rs = self.range_spec
             grr_tolerance = Gage.grr_variance(np.nan, rs, grr_shape1, grr_shape2,
                                               MS_0, MS_1, MS_2, MS_3, MS_0_t2, MS_1_t2, MS_2_t2, p_value1, p_value3, F3)
-            # varComp_Repeatability = MS_2_t2 if F3 > 0.05 else MS_3
-            #
-            # if MS_1_t2 > MS_2_t2:
-            #     ans1 = (MS_1_t2 - MS_2_t2) / (grr_shape1 * grr_shape2)
-            # else:
-            #     ans1 = 0
-            # if MS_1 > MS_2:
-            #     ans2 = (MS_1 - MS_2) / (grr_shape1 * grr_shape2)
-            # else:
-            #     ans2 = 0
-            #
-            # if p_value3 > 0.05:
-            #     # print("p_value greater than alpha 0.05")
-            #     varComp_op = ans1
-            #     # print("varComp_op: ", varComp_op)
-            #     # ------------
-            #     varComp_op_dut = 0
-            #     # print("varComp_op_dut: ", varComp_op_dut)
-            #     # ------------
-            #     if MS_0_t2 > MS_1_t2:
-            #         varComp_part_to_part = (MS_0_t2 - MS_2_t2) / (3 * 3)  # ???????
-            #     else:
-            #         varComp_part_to_part = 0
-            #         # print("varComp_part_to_part: ", varComp_part_to_part)
-            # else:
-            #     varComp_op = ans2
-            #     # print("varComp_op: ", varComp_op)
-            #     # -----------
-            #     varComp_op_dut = (MS_3 - MS_2) / grr_shape2
-            #     # print("varComp_op_dut: ", varComp_op_dut)
-            #     # -----------
-            #     if MS_0 > MS_3:
-            #         varComp_part_to_part = (MS_0 - MS_2) / (3 * 3)  # ???????
-            #     else:
-            #         varComp_part_to_part = 0
-            #
-            # varComp_reproducibility = varComp_op if F3 > 0.05 else (varComp_op + varComp_op_dut)
-            # varComp_total_RageRR = varComp_reproducibility + varComp_Repeatability
-            # varComp_total_variation = varComp_total_RageRR + varComp_part_to_part
-            # # total_GageRR = (varComp_reproducibility ** 2 + varComp_Repeatability ** 2) ** (1 / 2)
-            # # print("varComp_Repeatability: ", varComp_Repeatability)
-            # # print("varComp_reproducibility: ", varComp_reproducibility)
-            # # print("varComp_part_to_part: ", varComp_part_to_part)
-            # # print("varComp_total_RageRR: ", varComp_total_RageRR)
-            # # print("varComp_total_variation: ", varComp_total_variation)
-            # # Gage.grr_contribution(self, result)
-            # reproducibility = varComp_op if p_value1 > 0.05 else (varComp_op + varComp_op_dut)
-            # repeatability = varComp_Repeatability ** (1 / 2)
-            # total_RageRR = (reproducibility ** 2 + repeatability ** 2) ** (1 / 2)
-            # # print("Grr: ", total_RageRR * 6)
-            # grr_tolerance = total_RageRR * 6 / self.range_spec * 100
-            # print("grr_tolerance: ", grr_tolerance)
 
         except RuntimeWarning as ex:
             raise "divide failure => " + str(ex.args)
