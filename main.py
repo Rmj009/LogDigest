@@ -107,7 +107,7 @@ class StartPage:
         # self.btnReadRxCalf32.config(state=tk.DISABLED)
         # self.btnReadRxCalf5.config(state=tk.DISABLED)
         self.btnPages.config(state=tk.DISABLED)
-        self.btnGrrCalc.config(state=tk.DISABLED)
+        # self.btnGrrCalc.config(state=tk.DISABLED)
         # self.btnSummaryGRR.config(state=tk.DISABLED)
         self.combo.config(state=tk.DISABLED)
 
