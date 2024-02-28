@@ -35,48 +35,56 @@ class Digest_utils:
             raise "grr_calculation NG >>> " + str(e.args)
         return grr_value
 
-    def grr_cooking(filepath: str, avg_weigh: int):
+    def grr_cooking(self, pwd: str, csv_path, avg_weigh):
         """
         split dataframe into A,B,C blocks
         :return:
         """
         grr_lst = [f'GRR{avg_weigh}']
         avg_lst = [f'AVG{avg_weigh}']
-        current_time = datetime.datetime.now()
-        formatted_time = current_time.strftime(f'%H%M%S')
+
         try:
-            df = pd.read_csv(f'{filepath}', header=0, index_col=0)
+
+            csv_data_path = os.path.join(pwd, "DataCSV")
+            if not os.path.exists(csv_data_path):
+                os.mkdir(csv_data_path)
+            df = pd.read_csv(f'{csv_path}', header=0, index_col=0)
             spec_array = df.iloc[[0, 1]].values[:, 1:]
             df = df.iloc[2:, :-1]  # ignore last column
-            # summary_path = os.path.join(filepath, "Summary")
-            # if not os.path.exists(summary_path):
-            #     os.mkdir(summary_path)
             for i in range(df.shape[1] - 1):
                 select_arr_ith = np.array(df.iloc[:, i + 1]).reshape(10, 9)
                 avg_lst.append(np.mean(select_arr_ith))
                 grr_lst.append(Digest_utils.grr_calculation(select_arr_ith, spec_array[:, i]))
-            df_result = pd.read_csv(f'{filepath}', header=0)
-            df_result = df_result.iloc[:, :-1]  # remove last col fixture
-            # grr_lst = [np.nan if val == 'NAN' else float(val) for val in grr_lst]
-            grr_lst.insert(0, f'GRR{avg_weigh}')  # GRR as row name
-            avg_lst.insert(0, f'AVG{avg_weigh}')  # AVG as row name
-            df_result.index = df_result.index[:2].tolist() + (df_result.index[2:] + 1).tolist()
-            df_result.loc[2] = np.array(grr_lst)
-            df_result.index = df_result.index[:2].tolist() + (df_result.index[2:] + 1).tolist()
-            df_result.loc[2] = np.array(avg_lst)
-            df_result = df_result.sort_index()
-            df_result.to_csv(f'GRR_avg{avg_weigh}_{formatted_time}.csv', sep=',')
             # df_result = pd.concat([df.iloc[:3], result, df.iloc[3:]]).reset_index(drop=True)
 
         except Exception as e:
             raise "grr_cooking NG >>> " + str(e.args)
-        return "success"
+        return self.grr_packing(pwd, csv_path, avg_lst, grr_lst, avg_weigh)
+
+    def grr_packing(self, *args):
+        pwd, csv_path, avg_lst, grr_lst, avg_weigh = args
+        current_time = datetime.datetime.now()
+        formatted_time = current_time.strftime(f'%H%M%S')
+        try:
+            summary_path = os.path.join(pwd, "Summary")
+            df_pack = pd.read_csv(f'{csv_path}', header=0)
+            df_pack = df_pack.iloc[:, :-1]  # remove last col fixture
+            # grr_lst = [np.nan if val == 'NAN' else float(val) for val in grr_lst]
+            grr_lst.insert(0, f'GRR{avg_weigh}')  # GRR as row name
+            avg_lst.insert(0, f'AVG{avg_weigh}')  # AVG as row name
+            df_pack.index = df_pack.index[:2].tolist() + (df_pack.index[2:] + 1).tolist()
+            df_pack.loc[2] = np.array(grr_lst)
+            df_pack.index = df_pack.index[:2].tolist() + (df_pack.index[2:] + 1).tolist()
+            df_pack.loc[2] = np.array(avg_lst)
+            df_pack = df_pack.sort_index()
+            summary_file_path = os.path.join(summary_path, f'GRR_avg{avg_weigh}_{formatted_time}.csv')
+            df_pack.to_csv(summary_file_path, sep=',')
+        except Exception as e:
+            raise "grr_packing NG >>>" + str(e.args)
+        # return df_pack
 
     def grr_data_digest(filepath: str, pwd) -> np.array:
         # window = 2
-        # arr_weight = pd.DataFrame()
-        # arr_result = pd.DataFrame()
-        # df_result = pd.DataFrame()  # index=range(df.shape[0]), columns=range(df.shape[1])
         # arr_lst = []
         try:
             csv_data_path = os.path.join(pwd, "DataCSV")
@@ -171,18 +179,16 @@ class Digest_utils:
 
     def grr_summary(self, *args):
         arr_result = []
+        path = ""
         current_time = datetime.datetime.now()
         formatted_time = current_time.strftime(f'%H%M%S')
         try:
-            file_path = args
-            summary_path = os.path.join(file_path[0], "Summary")
-            if not os.path.exists(summary_path):
-                os.mkdir(summary_path)
-            grr_files = os.listdir(summary_path)
+            grr_file_path = args
+            grr_files = os.listdir(grr_file_path[0])
             for file in grr_files:
                 if file.endswith(".csv"):
-                    file_path = os.path.join(summary_path, file)
-                df = pd.read_csv(file_path, header=0, index_col=0)
+                    path = os.path.join(grr_file_path[0], file)
+                df = pd.read_csv(path, header=0, index_col=0)
                 df_select = df.iloc[2:4, 1:]
                 df_select = df_select.T
                 df_select.columns = df_select.iloc[0]
@@ -191,10 +197,40 @@ class Digest_utils:
 
             df_result = pd.concat([pd.DataFrame(arr) for arr in arr_result], axis=1)
             df_result = df_result.sort_index(axis=1)
-            df_result.to_csv(f'GRR_Summary_{formatted_time}.csv', sep=',')
+            _filename = os.path.join(grr_file_path[0], f'Summary_GRR_{formatted_time}.csv')
+            df_result.to_csv(_filename, sep=',')
 
         except Exception as e:
             raise "grr_summary NG >>> " + str(e.args)
+        return ""
+
+    def grr_selection(self, *args):
+        avg_result_lst = []
+        grr_result_lst = []
+        path = ""
+        current_time = datetime.datetime.now()
+        formatted_time = current_time.strftime(f'%H%M%S')
+        df_result = pd.DataFrame()
+        try:
+            summary_file_path = args[0]
+            grr_csv_gather = os.listdir(summary_file_path)
+            for file in grr_csv_gather:
+                if file.startswith("Summary"):
+                    p = os.path.join(summary_file_path, file)
+                    df_result = pd.read_csv(p, header=0, index_col=0)
+            df_result.columns = [i for i in range(df_result.shape[1])]
+            df_result = df_result.drop(df_result.index[0])  # delete first redundant row
+            for index, row in df_result.iterrows():
+                _selected_weigh = row.iloc[-1]
+                avg_result_lst.append(row.iloc[int(_selected_weigh)])
+                # grr_result_lst.append(row.iloc[int(_selected_weigh) + 4])
+            df_result['Final_AVG'] = avg_result_lst
+            # df_result['Final_GRR'] = grr_result_lst
+            _filename = os.path.join(summary_file_path, f'GRR_Result_{formatted_time}.csv')
+            df_result.to_csv(_filename, sep=',')
+
+        except Exception as e:
+            raise "grr_selection NG >>> " + str(e.args)
         return ""
 
     def convertToDf(*args) -> pd.DataFrame():

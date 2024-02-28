@@ -74,6 +74,8 @@ class StartPage:
         self.btnGrrCalc.pack(side='top', padx=10, pady=5, anchor="w")
         self.btnSummaryGRR = tk.Button(self.frame, text="Summary GRR", command=lambda: self.summary_grr())
         self.btnSummaryGRR.pack(side='top', padx=10, pady=5, anchor="w")
+        self.btnConcludeGRR = tk.Button(self.frame, text="Conclude GRR", command=lambda: self.final_grr())
+        self.btnConcludeGRR.pack(side='top', padx=10, pady=5, anchor="w")
         self.btnPages = tk.Button(self.frame, text="open pages", command=lambda: self.create_frames())
         self.btnPages.pack(side='top', padx=10, pady=5, anchor="w")
         # self.btnReadWifiTx = tk.Button(self.frame, text="Yield WIFI_TX_table", command=lambda: self.ReadRawData("Tx"))
@@ -107,8 +109,8 @@ class StartPage:
         # self.btnReadRxCalf32.config(state=tk.DISABLED)
         # self.btnReadRxCalf5.config(state=tk.DISABLED)
         self.btnPages.config(state=tk.DISABLED)
-        # self.btnGrrCalc.config(state=tk.DISABLED)
-        # self.btnSummaryGRR.config(state=tk.DISABLED)
+        self.btnGrrCalc.config(state=tk.DISABLED)
+        self.btnSummaryGRR.config(state=tk.DISABLED)
         self.combo.config(state=tk.DISABLED)
 
         self.txt = tk.Text(self.frameTxt, font=self.font, width=200, height=150, wrap=tk.WORD)
@@ -143,28 +145,53 @@ class StartPage:
         frame = self.frames[cont]
         frame.tkraise()
 
+    def final_grr(self):
+        try:
+            util_obj = Digest_utils()
+            summary_path = os.path.join(self.path, "Summary")
+            util_obj.grr_selection(summary_path)
+            self.info_manager.update_info("Selection done", f'{summary_path}')
+        except Exception as e:
+            messagebox.showerror("Summary NG", "Plz retry")
+            raise "summary_grr NG >>> " + str(e.args)
+
     def summary_grr(self):
         try:
-            my_utils = Digest_utils()
-            my_utils.grr_summary(self.path)
-            self.info_manager.update_info("Summary GRR", "Success")
+            util_obj = Digest_utils()
+            summary_path = os.path.join(self.path, "Summary")
+            util_obj.grr_summary(summary_path)
+            self.info_manager.update_info("Output Summary GRR", f'{summary_path}')
         except Exception as e:
             messagebox.showerror("Summary NG", "Plz retry")
             raise "summary_grr NG >>> " + str(e.args)
 
     def calc_grr(self):
         filepath = self.grr_filePath
-        pwd = self.path
         try:
-            # Asking user which grr csv
+            util_obj = Digest_utils()
             # csv_ith = self.combo.get()[3]  # need debug
-            csv_data_path = os.path.join(pwd, "DataCSV")
+            csv_data_path = os.path.join(self.path, "DataCSV")
+            summary_path = os.path.join(self.path, "Summary")
+            if not os.path.exists(summary_path):
+                os.mkdir(summary_path)
+                print("Directory '% s' created" % summary_path)
+            else:
+                all_grr_csv = os.listdir(summary_path)
+                for file in all_grr_csv:
+                    if file.endswith(".csv"):
+                        file_path = os.path.join(summary_path, file)
+                        os.remove(file_path)
+                        print(f'remove csv >>>{file_path}')
+            if not os.path.exists(csv_data_path):
+                os.mkdir(csv_data_path)
             grr_csv_ = os.listdir(csv_data_path)
-            # Digest_utils.grr_cooking(f'{csv_data_path_select}', csv_ith)
-            for csv_ith, csv in enumerate(grr_csv_):
+            for avg_weigh, csv in enumerate(grr_csv_):
                 csv_path_select = os.path.join(csv_data_path, f'{csv}')
-                Digest_utils.grr_cooking(csv_path_select, csv_ith)
-            self.info_manager.update_info("Output Gage R&R csv", f'{pwd}')
+                util_obj.grr_cooking(self.path, csv_path_select, avg_weigh)
+            # for csv_ith, csv in enumerate(grr_csv_):
+            #     csv_path_select = os.path.join(csv_data_path, f'{csv}')
+
+            self.info_manager.update_info("Output Gage R&R csv", f'{summary_path}')
             self.btnSummaryGRR.config(state=tk.ACTIVE)
         except Exception as e:
             raise "calculate GRR err >>> " + str(e.args)
