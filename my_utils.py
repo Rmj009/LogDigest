@@ -4,7 +4,9 @@ import csv
 import numpy as np
 import pandas as pd
 from Gage import Gage
-from openpyxl import load_workbook
+from openpyxl import load_workbook, Workbook
+from openpyxl.utils.dataframe import dataframe_to_rows
+from openpyxl.styles import PatternFill
 
 
 class Digest_utils:
@@ -72,16 +74,18 @@ class Digest_utils:
             # grr_lst = [np.nan if val == 'NAN' else float(val) for val in grr_lst]
             grr_lst.insert(0, f'GRR{avg_weigh}')  # GRR as row name
             avg_lst.insert(0, f'AVG{avg_weigh}')  # AVG as row name
-            df_pack.index = df_pack.index[:2].tolist() + (df_pack.index[2:] + 1).tolist()
+            #  ------------- add AVG attribute -------------
+            df_pack.index = df_pack.index[:2].tolist() + (df_pack.index[2:] + 2).tolist()
+            df_pack.loc[3] = np.array(avg_lst)
             df_pack.loc[2] = np.array(grr_lst)
-            df_pack.index = df_pack.index[:2].tolist() + (df_pack.index[2:] + 1).tolist()
-            df_pack.loc[2] = np.array(avg_lst)
+            #  ------------- add GRR attribute -------------
+            # df_pack.index = df_pack.index[:2].tolist() + (df_pack.index[2:] + 1).tolist()
+            # df_pack.loc[2] = np.array(grr_lst)
             df_pack = df_pack.sort_index()
             summary_file_path = os.path.join(summary_path, f'GRR_avg{avg_weigh}_{formatted_time}.csv')
             df_pack.to_csv(summary_file_path, sep=',')
         except Exception as e:
             raise "grr_packing NG >>>" + str(e.args)
-        # return df_pack
 
     def grr_data_digest(filepath: str, pwd) -> np.array:
         # window = 2
@@ -196,7 +200,7 @@ class Digest_utils:
                 arr_result.append(df_select)
 
             df_result = pd.concat([pd.DataFrame(arr) for arr in arr_result], axis=1)
-            df_result = df_result.sort_index(axis=1)
+            df_result = df_result.sort_index(axis=1, ascending=False) # reverse sorting
             _filename = os.path.join(grr_file_path[0], f'Summary_GRR_{formatted_time}.csv')
             df_result.to_csv(_filename, sep=',')
 
@@ -204,10 +208,36 @@ class Digest_utils:
             raise "grr_summary NG >>> " + str(e.args)
         return ""
 
+    @staticmethod
+    def highlight_NG(file_path):
+        try:
+            df = pd.read_csv(file_path, header=0, index_col=0)
+            # Create a new Excel workbook and select the active sheet
+            wb = Workbook()
+            ws = wb.active
+
+            # Write the DataFrame to the Excel sheet
+            for r in dataframe_to_rows(df, index=True, header=True):
+                ws.append(r)
+
+            # Apply conditional formatting to highlight values greater than 30
+            # for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=1, max_col=ws.max_column):
+            #     for cell in row:
+            for row in range(2, ws.max_row + 1):
+                for col in range(2, ws.max_column - 6):   # highlight without AVG cols
+                    cell = ws.cell(row=row, column=col)
+                    if cell.value is not None and cell.value > 30:
+                        cell.fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
+
+            # Save the workbook
+            wb.save('highlighted_values.xlsx')
+        except Exception as e:
+            raise "grr_summary NG >>> " + str(e.args)
+
     def grr_selection(self, *args):
         avg_result_lst = []
         grr_result_lst = []
-        path = ""
+        # path = ""
         current_time = datetime.datetime.now()
         formatted_time = current_time.strftime(f'%H%M%S')
         df_result = pd.DataFrame()
@@ -218,16 +248,19 @@ class Digest_utils:
                 if file.startswith("Summary"):
                     p = os.path.join(summary_file_path, file)
                     df_result = pd.read_csv(p, header=0, index_col=0)
+            # origin_col_name = df_result.columns
             df_result.columns = [i for i in range(df_result.shape[1])]
             df_result = df_result.drop(df_result.index[0])  # delete first redundant row
             for index, row in df_result.iterrows():
                 _selected_weigh = row.iloc[-1]
-                avg_result_lst.append(row.iloc[int(_selected_weigh)])
-                # grr_result_lst.append(row.iloc[int(_selected_weigh) + 4])
-            df_result['Final_AVG'] = avg_result_lst
-            # df_result['Final_GRR'] = grr_result_lst
+                grr_result_lst.append(row.iloc[int(_selected_weigh)])
+                # avg_result_lst.append(row.iloc[int(_selected_weigh) + 4])
+            df_result['Final_GRR'] = grr_result_lst
+            # df_result['Final_AVG'] = avg_result_lst
             _filename = os.path.join(summary_file_path, f'GRR_Result_{formatted_time}.csv')
+            # df_result.columns = origin_col_name
             df_result.to_csv(_filename, sep=',')
+            Digest_utils.highlight_NG(_filename)
 
         except Exception as e:
             raise "grr_selection NG >>> " + str(e.args)

@@ -111,6 +111,7 @@ class StartPage:
         self.btnPages.config(state=tk.DISABLED)
         self.btnGrrCalc.config(state=tk.DISABLED)
         self.btnSummaryGRR.config(state=tk.DISABLED)
+        # self.btnConcludeGRR.config(state=tk.DISABLED)
         self.combo.config(state=tk.DISABLED)
 
         self.txt = tk.Text(self.frameTxt, font=self.font, width=200, height=150, wrap=tk.WORD)
@@ -152,7 +153,7 @@ class StartPage:
             util_obj.grr_selection(summary_path)
             self.info_manager.update_info("Selection done", f'{summary_path}')
         except Exception as e:
-            messagebox.showerror("Summary NG", "Plz retry")
+            messagebox.showerror("Conclude GRR NG", "Plz make sure index at last column and retry")
             raise "summary_grr NG >>> " + str(e.args)
 
     def summary_grr(self):
@@ -161,6 +162,7 @@ class StartPage:
             summary_path = os.path.join(self.path, "Summary")
             util_obj.grr_summary(summary_path)
             self.info_manager.update_info("Output Summary GRR", f'{summary_path}')
+            self.btnConcludeGRR.config(state=tk.ACTIVE)
         except Exception as e:
             messagebox.showerror("Summary NG", "Plz retry")
             raise "summary_grr NG >>> " + str(e.args)

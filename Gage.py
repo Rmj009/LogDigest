@@ -9,8 +9,9 @@ class Gage:
         self.LSL = LSL
         self.range_spec = self.USL - self.LSL
 
-    def fmt_println(self):
+    def __repr__(self):
         print(self.USL, self.LSL, self.range_spec)
+        return self.range_spec
 
     def grr_contribution(self, *args):
         # -------------- Gage contribution --------------
@@ -40,44 +41,30 @@ class Gage:
 
     def grr_variance(self, *args):
         # -------------- GRR_Variance --------------
-        range_spec, grr_shape1, grr_shape2, MS_0, MS_1, MS_2, MS_3, MS_0_t2, MS_1_t2, MS_2_t2, p_value1, p_value3, F3 = args
+        range_spec = self
+        grr_shape1, grr_shape2, MS_0, MS_1, MS_2, MS_3, MS_0_t2, MS_1_t2, MS_2_t2, p_value1, p_value3, F3 = args
         try:
-            varComp_Repeatability = MS_2_t2 if F3 > 0.05 else MS_3
-            if MS_1_t2 > MS_2_t2:
-                ans1 = (MS_1_t2 - MS_2_t2) / (grr_shape1 * grr_shape2)
-            else:
-                ans1 = 0
-            if MS_1 > MS_2:
-                ans2 = (MS_1 - MS_2) / (grr_shape1 * grr_shape2)
-            else:
-                ans2 = 0
-
-            if p_value3 > 0.05:
-                # print("p_value greater than alpha 0.05")
-                varComp_op = ans1
+            # if MS_0_t2 == np.none:
+            #     pass
+            if p_value3 >= 0.05:
+                varComp_op = (MS_1_t2 - MS_2_t2) / (grr_shape1 * grr_shape2) if MS_1_t2 > MS_2_t2 else 0
                 varComp_op_dut = 0
-                if MS_0_t2 > MS_1_t2:
-                    varComp_part_to_part = (MS_0_t2 - MS_2_t2) / (3 * 3)  # ???????
-                else:
-                    varComp_part_to_part = 0
+                varComp_Repeatability = MS_2_t2
+                varComp_part_to_part = (MS_0_t2 - MS_2_t2) / (3 * 3) if MS_0_t2 > MS_1_t2 else 0  # ???????
+                varComp_reproducibility = varComp_op
             else:
-                varComp_op = ans2
-                varComp_op_dut = (MS_3 - MS_2) / grr_shape2
-                if MS_0 > MS_3:
-                    varComp_part_to_part = (MS_0 - MS_2) / (3 * 3)  # ???????
-                else:
-                    varComp_part_to_part = 0
-
-            varComp_reproducibility = varComp_op if F3 > 0.05 else (varComp_op + varComp_op_dut)
+                varComp_op = (MS_1 - MS_2) / (grr_shape1 * grr_shape2) if MS_1 > MS_2 else 0
+                varComp_op_dut = (MS_2 - MS_3) / grr_shape2
+                varComp_Repeatability = MS_3
+                varComp_part_to_part = (MS_0 - MS_2) / (3 * 3) if MS_0 > MS_3 else 0  # ???????
+                varComp_reproducibility = varComp_op + varComp_op_dut
             varComp_total_RageRR = varComp_reproducibility + varComp_Repeatability
             varComp_total_variation = varComp_total_RageRR + varComp_part_to_part
-            reproducibility = varComp_op if p_value1 > 0.05 else (varComp_op + varComp_op_dut)
-            repeatability = varComp_Repeatability ** (1 / 2)
-            # total_GageRR = (varComp_reproducibility ** 2 + varComp_Repeatability ** 2) ** (1 / 2)
-            # Gage.grr_contribution(self, result)
-            reproducibility = varComp_op if p_value1 > 0.05 else (varComp_op + varComp_op_dut)
-            repeatability = varComp_Repeatability ** (1 / 2)
-            total_RageRR = (reproducibility ** 2 + repeatability ** 2) ** (1 / 2)
+            # grr_op = varComp_op ** (1/2)
+            # grr_op_dut = varComp_op_dut ** (1/2)
+            reproducibility = varComp_op ** (1/2) if p_value3 >= 0.05 else (varComp_op + varComp_op_dut) ** (1/2)
+            total_RageRR = (reproducibility ** 2 + varComp_Repeatability) ** (1 / 2)
+            total_variation = (total_RageRR ** 2 + varComp_part_to_part) ** (1 / 2)
             grr_tolerance = total_RageRR * 6 / range_spec * 100
             # print("varComp_op: ", varComp_op)
             # print("varComp_op_dut: ", varComp_op_dut)
@@ -182,13 +169,18 @@ class Gage:
             p_value3 = 1 - f.cdf(F3, df_dut_op, df_repeat)
             ## https: // www.geeksforgeeks.org / how - to - perform - an - f - test - in -python /
             ## Table 2 without interaction as if p_value3 >= 0.05
-            MS_0_t2 = np.sum(SS_DUT) / df_dut
-            MS_1_t2 = SS_OP / df_op
-            MS_2_t2 = (SS_DUT_op + SS_Repeatability) / (df_repeat + df_dut_op)
-            F1_t2 = np.nan if np.isnan(MS_0_t2 / MS_2_t2) else MS_0_t2 / MS_2_t2
-            F2_t2 = np.nan if np.isnan(MS_1_t2 / MS_2_t2) else MS_1_t2 / MS_2_t2
-            p_value1_t2 = 1 - f.cdf(F1_t2, df_dut, (df_repeat + df_dut_op))
-            p_value2_t2 = 1 - f.cdf(F2_t2, df_op, (df_repeat + df_dut_op))
+            if p_value3 > 0.05:
+                MS_0_t2 = np.sum(SS_DUT) / df_dut
+                MS_1_t2 = SS_OP / df_op
+                MS_2_t2 = (SS_DUT_op + SS_Repeatability) / (df_repeat + df_dut_op)
+                F1_t2 = np.nan if np.isnan(MS_0_t2 / MS_2_t2) else MS_0_t2 / MS_2_t2
+                F2_t2 = np.nan if np.isnan(MS_1_t2 / MS_2_t2) else MS_1_t2 / MS_2_t2
+                p_value1_t2 = 1 - f.cdf(F1_t2, df_dut, (df_repeat + df_dut_op))
+                p_value2_t2 = 1 - f.cdf(F2_t2, df_op, (df_repeat + df_dut_op))
+            else:
+                MS_0_t2 = np.nan
+                MS_1_t2 = np.nan
+                MS_2_t2 = np.nan
             # print("F1: ", F1)
             # print("F2: ", F2)
             # print("F3: ", F3)
@@ -201,8 +193,7 @@ class Gage:
             # print("p_value2_t2: ", p_value2_t2)
             # print('-----------------------------------------')
             # -------------- GRR_Variance --------------
-            rs = self.range_spec
-            grr_tolerance = Gage.grr_variance(np.nan, rs, grr_shape1, grr_shape2,
+            grr_tolerance = Gage.grr_variance(self.range_spec, grr_shape1, grr_shape2,
                                               MS_0, MS_1, MS_2, MS_3, MS_0_t2, MS_1_t2, MS_2_t2, p_value1, p_value3, F3)
 
         except RuntimeWarning as ex:
