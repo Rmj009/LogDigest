@@ -1,7 +1,9 @@
-from tkinter import ttk, filedialog, messagebox
+import threading
+from tkinter import ttk, filedialog, messagebox, scrolledtext
 # from DigestData import PreManifest, DataUtils
 from my_utils import Digest_utils
 import tkinter as tk
+import time
 # import glob
 import os
 
@@ -25,13 +27,26 @@ class InfoManager:
     def get_info(self, title):
         return self.info.get(title, "")
 
+    def run_info_manager(self):
+        global info_manager
+        while True:
+            # Simulate updating information every 2 seconds
+            info_manager.update_info("Time", time.ctime())
+            time.sleep(0.5)
+
     def update_text_widget(self):
         self.txt_widget.config(state=tk.NORMAL)
-        self.txt_widget.delete('1.0', tk.END)
+        # self.txt_widget.delete('1.0', tk.END)
         for title, info in self.info.items():
-            self.txt_widget.insert(tk.END, f">>> {title} \n" + ">>> " + f"{info} \r\n")
+            self.txt_widget.insert(self.txt_widget, f">>> {title} \n" + ">>> " + f"{info} \r\n")
             self.txt_widget.see('end')
         self.txt_widget.config(state=tk.DISABLED)
+
+    def start_info_manager_thread(self):
+        global info_manager_thread
+        info_manager_thread = threading.Thread(target=self.run_info_manager)
+        info_manager_thread.daemon = True
+        info_manager_thread.start()
 
 
 class StartPage:
@@ -45,6 +60,7 @@ class StartPage:
         self.root.geometry("750x600")
         self.root.title("Entrance")
         self.font = ('Times New Roman', 12, "bold")
+        # self.txt_widget
         self.frame = tk.Frame(self.root, bg='gray66', width=100, height=160)
         # self.frame.grid(row=0, column=0, padx=10, pady=10, sticky='nw')
         self.frame.pack(side='left', fill=tk.BOTH, expand=False)
@@ -113,8 +129,9 @@ class StartPage:
         self.btnSummaryGRR.config(state=tk.DISABLED)
         # self.btnConcludeGRR.config(state=tk.DISABLED)
         self.combo.config(state=tk.DISABLED)
-
-        self.txt = tk.Text(self.frameTxt, font=self.font, width=200, height=150, wrap=tk.WORD)
+        # self.txt_widget = scrolledtext.ScrolledText(self.frameTxt, font=self.font, wrap=tk.WORD)
+        # self.txt_widget.pack(expand=True, fill='both')
+        self.txt = tk.Text(self.windows, font=self.font, width=200, height=150, wrap=tk.WORD)
         self.txt.pack(side='left')
         self.txt.config(state=tk.DISABLED, spacing1=10, spacing2=5, padx=10, pady=10)
         self.path = os.path.dirname(os.path.abspath('__file__'))
@@ -122,6 +139,7 @@ class StartPage:
         self.frames = {}
         # self.show_frame(StartPage)
         self.info_manager = InfoManager(self.txt)
+
         self.grr_filePath: str = ""
         self.grr_spec = None
 
@@ -272,6 +290,7 @@ class StartPage:
 
     def run(self):
         self.root.protocol("WM_DELETE_WINDOW", self.on_exit)
+        self.info_manager.start_info_manager_thread()
         self.root.mainloop()
 
     def on_exit(self):  # obj: object
@@ -332,9 +351,9 @@ class PageOne(tk.Frame):
         self.root.title("PageOne")
         label = tk.Label(self, text="This is Page One")
         label.pack(side="top", fill="x", pady=10)
-        button1 = tk.Button(self, text="Go to Start Page",
-                            command=lambda: controller.show_frame(StartPage))
-        button1.pack()
+        # button1 = tk.Button(self, text="Go to Start Page",
+        #                     command=lambda: controller.show_frame())
+        # button1.pack()
         button2 = tk.Button(self, text="Go to Page Two",
                             command=lambda: controller.show_frame(PageTwo))
         button2.pack()
@@ -347,9 +366,9 @@ class PageTwo(tk.Frame):
         self.root.title("PageTwo")
         label = tk.Label(self, text="This is Page Two")
         label.pack(side="top", fill="x", pady=10)
-        button1 = tk.Button(self, text="Go to Start Page",
-                            command=lambda: controller.show_frame(StartPage))
-        button1.pack()
+        # button1 = tk.Button(self, text="Go to Start Page",
+        #                     command=lambda: controller.show_frame(StartPage))
+        # button1.pack()
         button2 = tk.Button(self, text="Go to Page One",
                             command=lambda: controller.show_frame(PageOne))
         button2.pack()
@@ -357,17 +376,13 @@ class PageTwo(tk.Frame):
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    A_op = [[1, 2, 3] for _ in range(10)]
-    B_op = [[4, 5, 6] for _ in range(10)]
-    C_op = [[7, 8, 9] for _ in range(10)]
-    DUT_1 = [A_op, B_op, C_op]
-    USL = 5
-    LSL = -5
-    range_spec = USL - LSL
-    # grr_instance = Gage(DUT_1, LSL, USL)
-    # grr_instance.fmt_println()
-    # grr_instance.rawData_handling(range_spec, DUT_1)
+
     app = StartPage()
+    txt_widget = scrolledtext.ScrolledText(app.txt, font=('Times New Roman', 12), wrap=tk.WORD)
+    txt_widget.pack(expand=True, fill='both')
+
+    info_manager = InfoManager(txt_widget)
+
     # app.protocol("WM_DELETE_WINDOW", self.on_exit)
     # app.mainloop()
     app.run()
