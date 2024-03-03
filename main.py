@@ -36,9 +36,9 @@ class InfoManager:
 
     def update_text_widget(self):
         self.txt_widget.config(state=tk.NORMAL)
-        # self.txt_widget.delete('1.0', tk.END)
+        self.txt_widget.delete(self.txt_widget, tk.END)
         for title, info in self.info.items():
-            self.txt_widget.insert(self.txt_widget, f">>> {title} \n" + ">>> " + f"{info} \r\n")
+            self.txt_widget.insert(tk.END, f">>> {title} \n" + ">>> " + f"{info} \r\n")
             self.txt_widget.see('end')
         self.txt_widget.config(state=tk.DISABLED)
 
@@ -62,10 +62,9 @@ class StartPage:
         self.font = ('Times New Roman', 12, "bold")
         # self.txt_widget
         self.frame = tk.Frame(self.root, bg='gray66', width=100, height=160)
-        # self.frame.grid(row=0, column=0, padx=10, pady=10, sticky='nw')
         self.frame.pack(side='left', fill=tk.BOTH, expand=False)
-        self.frameTxt = tk.Frame(self.root, bg='gray78', width=100, height=160)
-        self.frameTxt.pack(side='right', fill=tk.BOTH, expand=False)
+        # self.frameTxt = tk.Frame(self.root, bg='gray78', width=100, height=160)
+        # self.frameTxt.pack(side='right', fill=tk.BOTH, expand=False)
 
         self.label = tk.Label(self.frame, font=('Times', 20, 'bold'), text="File selection",
                               justify='left')
@@ -131,7 +130,7 @@ class StartPage:
         self.combo.config(state=tk.DISABLED)
         # self.txt_widget = scrolledtext.ScrolledText(self.frameTxt, font=self.font, wrap=tk.WORD)
         # self.txt_widget.pack(expand=True, fill='both')
-        self.txt = tk.Text(self.windows, font=self.font, width=200, height=150, wrap=tk.WORD)
+        self.txt = tk.Text(self.root, font=self.font, width=200, height=150, wrap=tk.WORD)
         self.txt.pack(side='left')
         self.txt.config(state=tk.DISABLED, spacing1=10, spacing2=5, padx=10, pady=10)
         self.path = os.path.dirname(os.path.abspath('__file__'))
