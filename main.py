@@ -57,22 +57,19 @@ class StartPage:
         self.root = tk.Tk()
         self.windows = []
         self.GGR_option = 0
-        self.root.geometry("750x600")
-        self.root.title("Entrance")
+        self.frame_size = "700x500"
+        self.root.geometry(self.frame_size)
+        self.root.title("GRR analyst")
         self.font = ('Times New Roman', 12, "bold")
-        # self.txt_widget
+
+        self.txt = tk.Text(self.root, font=self.font, width=200, height=150, wrap=tk.WORD)
+
         self.frame = tk.Frame(self.root, bg='gray66', width=100, height=160)
-        self.frame.pack(side='left', fill=tk.BOTH, expand=False)
-        # self.frameTxt = tk.Frame(self.root, bg='gray78', width=100, height=160)
-        # self.frameTxt.pack(side='right', fill=tk.BOTH, expand=False)
 
         self.label = tk.Label(self.frame, font=('Times', 20, 'bold'), text="File selection",
                               justify='left')
         self.label.pack(side='top', padx=5, pady=5)
-        self.btnOpen = tk.Button(self.frame, text="Open", command=lambda: self.open_grr_file())  # self.chooseFile()
-        self.btnOpen.pack(side='top', padx=10, pady=5, anchor="w")
-        self.btnGrrCalc = tk.Button(self.frame, text="GRR Calculation",
-                                    command=lambda: self.calc_grr())  # self.chooseFile()
+
         self.combo = ttk.Combobox(self.frame, state="readonly", values=["GGR1", "GGR2", "GGR3", "GGR4", "GGR5"])
         # # label
         # ttk.Label(self.frame, text="Select the Month :",
@@ -86,33 +83,40 @@ class StartPage:
         self.combo.set("GRR1")
         # self.combo.place(x=5, y=5)
         # self.combo.pack(side='top', padx=5, pady=5, anchor="w")
-        self.btnGrrCalc.pack(side='top', padx=10, pady=5, anchor="w")
         self.btnSummaryGRR = tk.Button(self.frame, text="Summary GRR", command=lambda: self.summary_grr())
-        self.btnSummaryGRR.pack(side='top', padx=10, pady=5, anchor="w")
         self.btnConcludeGRR = tk.Button(self.frame, text="Conclude GRR", command=lambda: self.final_grr())
-        self.btnConcludeGRR.pack(side='top', padx=10, pady=5, anchor="w")
         self.btnPages = tk.Button(self.frame, text="open pages", command=lambda: self.create_frames())
+        self.btnOpen = tk.Button(self.frame, text="Open", command=lambda: self.open_grr_file())  # self.chooseFile()
+        self.btnGrrCalc = tk.Button(self.frame, text="GRR Calculation", command=lambda: self.calc_grr())  # self.chooseFile()
+
+        self.btnOpen.pack(side='top', padx=10, pady=5, anchor="w")
+        self.btnGrrCalc.pack(side='top', padx=10, pady=5, anchor="w")
+        self.btnSummaryGRR.pack(side='top', padx=10, pady=5, anchor="w")
+        self.btnConcludeGRR.pack(side='top', padx=10, pady=5, anchor="w")
         self.btnPages.pack(side='top', padx=10, pady=5, anchor="w")
         # self.btnReadWifiTx = tk.Button(self.frame, text="Yield WIFI_TX_table", command=lambda: self.ReadRawData("Tx"))
-        # self.btnReadWifiTx.pack(side='top', padx=10, pady=5, anchor="w")
+
         # self.btnReadWifiRx = tk.Button(self.frame, text="Yield WIFI_RX_table", command=lambda: self.ReadRawData("Rx"))
-        # self.btnReadWifiRx.pack(side='top', padx=10, pady=5, anchor="w")
         # self.btnReadWifiBeam = tk.Button(self.frame, text="Yield WIFI_Beam_table",
         #                                  command=lambda: self.ReadRawData("BeamForm"))
-        # self.btnReadWifiBeam.pack(side='top', padx=10, pady=5, anchor="w")
+
         # self.btnClean = tk.Button(self.frame, text="Clean Data", command=lambda: self.ReadRawData(""))
-        # self.btnClean.pack(side='top', padx=10, pady=5)
         # self.btnReadTxCalf33 = tk.Button(self.frame, text="Yield Tx Calibration 33",
         #                                  command=lambda: self.ReadRawData("TxCalf33"))
-        # self.btnReadTxCalf33.pack(side='top', padx=10, pady=5, anchor="w")
         # self.btnReadTxCalf6 = tk.Button(self.frame, text="Yield Tx Calibration 6",
-        #                                 command=lambda: self.ReadRawData("TxCalf6"))
-        # self.btnReadTxCalf6.pack(side='top', padx=10, pady=5, anchor="w")
         # self.btnReadRxCalf32 = tk.Button(self.frame, text="Yield Rx Calibration 32",
         #                                  command=lambda: self.ReadRawData("RxCalf32"))
-        # self.btnReadRxCalf32.pack(side='top', padx=10, pady=5, anchor="w")
         # self.btnReadRxCalf5 = tk.Button(self.frame, text="Yield Rx Calibration 5",
         #                                 command=lambda: self.ReadRawData("RxCalf5"))
+
+        # self.btnReadWifiTx.pack(side='top', padx=10, pady=5, anchor="w")
+        # self.btnReadWifiRx.pack(side='top', padx=10, pady=5, anchor="w")
+        # self.btnReadWifiBeam.pack(side='top', padx=10, pady=5, anchor="w")
+        # self.btnClean.pack(side='top', padx=10, pady=5)
+        # self.btnReadTxCalf33.pack(side='top', padx=10, pady=5, anchor="w")
+        #                                 command=lambda: self.ReadRawData("TxCalf6"))
+        # self.btnReadTxCalf6.pack(side='top', padx=10, pady=5, anchor="w")
+        # self.btnReadRxCalf32.pack(side='top', padx=10, pady=5, anchor="w")
         # self.btnReadRxCalf5.pack(side='top', padx=10, pady=5, anchor="w")
         self.btnExit = tk.Button(self.frame, text="Close Window", command=lambda: self.root.quit())
         self.btnExit.pack(side='bottom', padx=10, pady=5, anchor="sw")
@@ -130,15 +134,15 @@ class StartPage:
         self.combo.config(state=tk.DISABLED)
         # self.txt_widget = scrolledtext.ScrolledText(self.frameTxt, font=self.font, wrap=tk.WORD)
         # self.txt_widget.pack(expand=True, fill='both')
-        self.txt = tk.Text(self.root, font=self.font, width=200, height=150, wrap=tk.WORD)
-        self.txt.pack(side='left')
-        self.txt.config(state=tk.DISABLED, spacing1=10, spacing2=5, padx=10, pady=10)
+
         self.path = os.path.dirname(os.path.abspath('__file__'))
         self.create_dataDir()
-        self.frames = {}
         # self.show_frame(StartPage)
         self.info_manager = InfoManager(self.txt)
 
+        self.frame.pack(side='left', fill=tk.BOTH, expand=False)
+        self.txt.pack(side='left')
+        self.txt.config(state=tk.DISABLED, spacing1=10, spacing2=5, padx=10, pady=10)
         self.grr_filePath: str = ""
         self.grr_spec = None
 
@@ -378,7 +382,7 @@ if __name__ == '__main__':
 
     app = StartPage()
     txt_widget = scrolledtext.ScrolledText(app.txt, font=('Times New Roman', 12), wrap=tk.WORD)
-    txt_widget.pack(expand=True, fill='both')
+    txt_widget.pack(expand=True, fill='both', side='left')
 
     info_manager = InfoManager(txt_widget)
 
