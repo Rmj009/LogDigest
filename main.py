@@ -84,7 +84,7 @@ class StartPage(object):
         # self.btnPages.config(state=tk.DISABLED)
         self.btnGrrCalc.config(state=tk.DISABLED)
         self.btnSummaryGRR.config(state=tk.DISABLED)
-        # self.btnConcludeGRR.config(state=tk.DISABLED)
+        self.btnConcludeGRR.config(state=tk.DISABLED)
         self.combo.config(state=tk.DISABLED)
         # self.txt_widget = scrolledtext.ScrolledText(self.frameTxt, font=self.font, wrap=tk.WORD)
         # self.txt_widget.pack(expand=True, fill='both')
@@ -173,14 +173,18 @@ class StartPage(object):
 
     def open_grr_file(self):
         try:
-            self.grr_filePath = filedialog.askopenfilename(filetypes=[("Xlsx files", "*.xlsx")])
+            y_or_n = messagebox.askquestion("Question", "Weighted Average by users")  # yes,  no
+            # self.grr_filePath = filedialog.askopenfilename(filetypes=[("Xlsx files", "*.xlsx")])
+            self.grr_filePath = filedialog.askopenfilename()
             if self.grr_filePath:
                 # self.info_manager.start_info_manager_thread()
-
-                count_csv = Digest_utils.grr_data_digest(self.grr_filePath, self.path)
-                g_file = [f'GRR{i + 1},' for i in range(int(count_csv))]
-                # self.info_manager.update_info("Open", f'File Path {self.grr_filePath}')
-                self.info_manager.update_info("Open .xlsx and create .csv", "csv  ".join(g_file) + ".csv")
+                if y_or_n == 'yes':
+                    util_obj = Digest_utils()
+                    count_csv = 3
+                    util_obj.grr_data_digest(self.grr_filePath, self.path)
+                    g_file = [f'GRR{i + 1},' for i in range(int(count_csv))]
+                    self.info_manager.update_info("Open .xlsx average by users", f'File Path {self.grr_filePath}')
+                    self.info_manager.update_info("Open .xlsx and create .csv", "csv  ".join(g_file) + ".csv")
                 self.btnGrrCalc.config(state=tk.ACTIVE)
                 self.combo.config(state=tk.ACTIVE)
             else:

@@ -87,9 +87,9 @@ class Digest_utils:
         except Exception as e:
             raise "grr_packing NG >>>" + str(e.args)
 
-    def grr_data_digest(filepath: str, pwd) -> np.array:
-        # window = 2
-        # arr_lst = []
+    def grr_data_digest(self, *args, **kwargs) -> np.array:
+        filepath, pwd = args
+
         try:
             csv_data_path = os.path.join(pwd, "DataCSV")
             if not os.path.exists(csv_data_path):
@@ -102,50 +102,43 @@ class Digest_utils:
                         file_path = os.path.join(csv_data_path, file)
                         os.remove(file_path)
                         print(f'remove csv >>>{file_path}')
+            IsLastCol_Literal = True
+            if IsLastCol_Literal:
+                self.digest_csv(filepath, csv_data_path, 3)
+            else:
+                self.digest_xlsx()
 
-            # Digest_utils.digest_by_openpyxl(filepath)
-            # Read all sheets from the Excel file
-            xls = pd.ExcelFile(filepath)
-            sheet_names = xls.sheet_names
+            # df_result.to_csv(f'weight{window}.csv', sep=',')
+        except Exception as e:
+            raise "grr_data_digest NG >>>" + str(e.args)
+        # return df_spec_array  # str(df.shape)
+        # return count_total_csv
 
-            # Iterate over each sheet and save it as a CSV file
-            for idx, sheet_name in enumerate(sheet_names):
-                df = pd.read_excel(xls, sheet_name)
-                csv_file_name = f'GRR{idx + 1}.csv'
+    def digest_csv(self, *args):
+        csv_path, csv_data_path, weighted = args
+        """
+        weighted average by rolling function
+        """
+        # arr_lst = []
+        mockup_col_name = []
+        try:
+            df = pd.read_csv(f'{csv_path}', header=0, index_col=0)
+            mockup_col_name = df.columns[1:-1]
+            df_values = df.iloc[2: df.shape[0], 1: df.shape[1] - 1]  # all values
+            for w in range(weighted):
+                nest_lst = []
+                for col in range(df_values.shape[1]):  # for row in range(loop_row):  # dut_test_times per dut = 9     loop_row = df.shape[0] - 3
+                    arr_weight = df_values.iloc[:, col].rolling(w + 2, min_periods=w + 1, center=True).mean().values
+                    # nest_lst.append(arr_weight)
+                    nest_lst.append(arr_weight)
+                csv_file_name = f'GRR{w + 1}.csv'
                 csv_path_ = os.path.join(csv_data_path, csv_file_name)
-                # -----------------------------------
-                # create new index shifted for GRR, AGV row
-                # df.index = df.index[:2].tolist() + (df.index[2:] + 1).tolist()
-                # df.loc[2] = np.where(df.iloc[2, 0] != "AGV", "AGV", "NAN")
-                # df.index = df.index[:3].tolist() + (df.index[3:] + 1).tolist()
-                # df.loc[3] = np.where(df.iloc[3, 0] != "GRR", "GRR", "NAN")
-                # df = df.sort_index()
-                # -----------------------------------
-                df.to_csv(csv_path_, index=False)
-                print(f'Sheet "{sheet_name}" saved as "{csv_file_name}"')
-
-            all_csv_files = os.listdir(csv_data_path)
-            count_total_csv = sum(1 for file in all_csv_files if file.endswith('.csv'))
-
-            # df_values = df.iloc[3: df.shape[0], 1: df.shape[1]]  # all values
-            # loop_row_time = df.shape[0] // 9
-            # for col in range(df_values.shape[1]):
-            #     nest_lst = []
-            #     for row in range(loop_row_time):  # dut_test_times per dut = 9
-            #         arr_weight = pd.DataFrame(df_values.iloc[:9 * (row + 1), col])  # slice by _dut
-            #         arr_weight = np.array(
-            #             arr_weight.rolling(window, min_periods=(window // 2), center=True).mean().values)
-            #         nest_lst.append(arr_weight)
-            #         # arr = np.random.rand(3, 1)
-            #         # nest_lst.append(arr)
-            #         # arr_result = np.append(arr_result, arr_weight)
-            #     # df_result[f'{col}'] = arr_weight.tolist()
-            #     arr_lst.append(nest_lst)
-            # flat_lst = [item for sublist in arr_lst for item in sublist]
-            # df_result = pd.concat([pd.DataFrame(arr) for arr in flat_lst], axis=1)
-            # df_result = pd.merge([pd.DataFrame(arr) for arr in flat_lst])
-            # print(df_result)
-
+                # flat_lst = [item for sublist in arr_lst for item in sublist]
+                flat_lst = [arr for arr in nest_lst]
+                df_result = pd.concat([pd.DataFrame(arr) for arr in flat_lst], axis=1)  # df_result = pd.merge([pd.DataFrame(arr) for arr in flat_lst], on='left')
+                df_result.columns = mockup_col_name
+                df_result.to_csv(csv_path_, index=False)
+            # print(f'Sheet "{sheet_name}" saved as "{csv_file_name}"')
             # for i in range(df.shape[1] - 1):
             #     select_arr_ith = np.array(df.iloc[:, i + 1]).reshape(10, 9)
             #     df_testItem = pd.DataFrame(select_arr_ith)
@@ -155,11 +148,27 @@ class Digest_utils:
             #     grr_data = pd.DataFrame(df_testItem.values.reshape(3, 10, 3))
             #     grr_data.loc['A'].apply(lambda x: x.rolling(window=2).mean())
 
-            # df_result.to_csv(f'weight{window}.csv', sep=',')
         except Exception as e:
-            raise "grr_data_digest NG >>>" + str(e.args)
-        # return df_spec_array  # str(df.shape)
-        return count_total_csv
+
+            raise "xlsx file NG >>>" + str(e.args)
+
+    def digest_xlsx(self, *args):
+        source_path, csv_data_path = args
+        try:
+            # Read all sheets from the Excel file
+            xls = pd.ExcelFile(source_path)
+            sheet_names = xls.sheet_names
+            # Iterate over each sheet and save it as a CSV file
+            for idx, sheet_name in enumerate(sheet_names):
+                df = pd.read_excel(xls, sheet_name)
+                mockup_col_name = df.columns
+                csv_file_name = f'GRR{idx + 1}.csv'
+                csv_path_ = os.path.join(csv_data_path, csv_file_name)
+                df = df.sort_index()
+                df.to_csv(csv_path_, index=False)
+                print(f'Sheet "{sheet_name}" saved as "{csv_file_name}"')
+        except Exception as e:
+            raise "xlsx file NG >>>" + str(e.args)
 
     @staticmethod
     def digest_by_openpyxl(path):
@@ -200,7 +209,7 @@ class Digest_utils:
                 arr_result.append(df_select)
 
             df_result = pd.concat([pd.DataFrame(arr) for arr in arr_result], axis=1)
-            df_result = df_result.sort_index(axis=1, ascending=False) # reverse sorting
+            df_result = df_result.sort_index(axis=1, ascending=False)  # reverse sorting
             _filename = os.path.join(grr_file_path[0], f'Summary_GRR_{formatted_time}.csv')
             df_result.to_csv(_filename, sep=',')
 
@@ -224,7 +233,7 @@ class Digest_utils:
             # for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=1, max_col=ws.max_column):
             #     for cell in row:
             for row in range(2, ws.max_row + 1):
-                for col in range(2, ws.max_column - 6):   # highlight without AVG cols
+                for col in range(2, ws.max_column - 6):  # highlight without AVG cols
                     cell = ws.cell(row=row, column=col)
                     if cell.value is not None and cell.value > 30:
                         cell.fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
