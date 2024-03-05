@@ -1,74 +1,27 @@
-import threading
-from tkinter import ttk, filedialog, messagebox, scrolledtext
+from tkinter import ttk, filedialog, messagebox
 # from DigestData import PreManifest, DataUtils
 from my_utils import Digest_utils
+from info_Manager import *
 import tkinter as tk
-import time
 # import glob
 import os
 
 
-class InfoManager:
-    def __init__(self, txt_widget):
-        self.font = ('Times New Roman', 12, "bold")
-        self.txt_widget = txt_widget
-        self.info = {}
-
-    def __truediv__(self, other):
-        line = "=" * len(other.count)
-        return "\n".join([self.txt_widget, line, other.count])
-
-    def update_info(self, title, info):
-        self.info[title] = info
-        self.update_text_widget()
-        # ConfigTxt = tk.Text(self.frame, font=self.font, width=80, height=60, bg='white', fg='black')
-        # ConfigTxt.insert(tk.END, f'{configFile} \n')
-
-    def get_info(self, title):
-        return self.info.get(title, "")
-
-    def run_info_manager(self):
+class StartPage(object):
+    def __init__(self, master, **kwargs):
+        title = kwargs.pop('title')
+        self.master = master
+        # super().__init__()
         global info_manager
-        while True:
-            # Simulate updating information every 2 seconds
-            info_manager.update_info("Time", time.ctime())
-            time.sleep(0.5)
-
-    def update_text_widget(self):
-        self.txt_widget.config(state=tk.NORMAL)
-        self.txt_widget.delete(self.txt_widget, tk.END)
-        for title, info in self.info.items():
-            self.txt_widget.insert(tk.END, f">>> {title} \n" + ">>> " + f"{info} \r\n")
-            self.txt_widget.see('end')
-        self.txt_widget.config(state=tk.DISABLED)
-
-    def start_info_manager_thread(self):
-        global info_manager_thread
-        info_manager_thread = threading.Thread(target=self.run_info_manager)
-        info_manager_thread.daemon = True
-        info_manager_thread.start()
-
-
-class StartPage:
-
-    def __init__(self):
-        # tk.Tk.__init__(self, *args, **kwargs)
-        super().__init__()
-        self.root = tk.Tk()
         self.windows = []
         self.GGR_option = 0
-        self.frame_size = "700x500"
-        self.root.geometry(self.frame_size)
-        self.root.title("GRR analyst")
         self.font = ('Times New Roman', 12, "bold")
-
-        self.txt = tk.Text(self.root, font=self.font, width=200, height=150, wrap=tk.WORD)
-
-        self.frame = tk.Frame(self.root, bg='gray66', width=100, height=160)
-
-        self.label = tk.Label(self.frame, font=('Times', 20, 'bold'), text="File selection",
-                              justify='left')
-        self.label.pack(side='top', padx=5, pady=5)
+        self.frame = tk.Frame(master, bg='gray66', width=100, height=160)
+        self.txt = tk.Text(master, font=self.font, width=200, height=150, wrap=tk.WORD)
+        label = tk.Label(master, text=title)
+        label.pack(side="top", fill=tk.BOTH, pady=10)
+        # self.label = tk.Label(self.frame, font=self.font, text="NPI_Analysis_Tool", justify='left')
+        # self.label.pack(side='top', padx=5, pady=5)
 
         self.combo = ttk.Combobox(self.frame, state="readonly", values=["GGR1", "GGR2", "GGR3", "GGR4", "GGR5"])
         # # label
@@ -83,17 +36,18 @@ class StartPage:
         self.combo.set("GRR1")
         # self.combo.place(x=5, y=5)
         # self.combo.pack(side='top', padx=5, pady=5, anchor="w")
-        self.btnSummaryGRR = tk.Button(self.frame, text="Summary GRR", command=lambda: self.summary_grr())
-        self.btnConcludeGRR = tk.Button(self.frame, text="Conclude GRR", command=lambda: self.final_grr())
-        self.btnPages = tk.Button(self.frame, text="open pages", command=lambda: self.create_frames())
         self.btnOpen = tk.Button(self.frame, text="Open", command=lambda: self.open_grr_file())  # self.chooseFile()
-        self.btnGrrCalc = tk.Button(self.frame, text="GRR Calculation", command=lambda: self.calc_grr())  # self.chooseFile()
+        self.btnSummaryGRR = tk.Button(self.frame, text="GRR Summary", command=lambda: self.summary_grr())
+        self.btnConcludeGRR = tk.Button(self.frame, text="GRR Conclusion", command=lambda: self.final_grr())
+        self.btnGrrCalc = tk.Button(self.frame, text="GRR Calculation",
+                                    command=lambda: self.calc_grr())  # self.chooseFile()
+        # self.btnPages = tk.Button(self.frame, text="open pages", command=lambda: self.create_frames())
 
         self.btnOpen.pack(side='top', padx=10, pady=5, anchor="w")
         self.btnGrrCalc.pack(side='top', padx=10, pady=5, anchor="w")
         self.btnSummaryGRR.pack(side='top', padx=10, pady=5, anchor="w")
         self.btnConcludeGRR.pack(side='top', padx=10, pady=5, anchor="w")
-        self.btnPages.pack(side='top', padx=10, pady=5, anchor="w")
+        # self.btnPages.pack(side='top', padx=10, pady=5, anchor="w")
         # self.btnReadWifiTx = tk.Button(self.frame, text="Yield WIFI_TX_table", command=lambda: self.ReadRawData("Tx"))
 
         # self.btnReadWifiRx = tk.Button(self.frame, text="Yield WIFI_RX_table", command=lambda: self.ReadRawData("Rx"))
@@ -118,7 +72,7 @@ class StartPage:
         # self.btnReadTxCalf6.pack(side='top', padx=10, pady=5, anchor="w")
         # self.btnReadRxCalf32.pack(side='top', padx=10, pady=5, anchor="w")
         # self.btnReadRxCalf5.pack(side='top', padx=10, pady=5, anchor="w")
-        self.btnExit = tk.Button(self.frame, text="Close Window", command=lambda: self.root.quit())
+        self.btnExit = tk.Button(self.frame, text="Close", command=lambda: master.quit())
         self.btnExit.pack(side='bottom', padx=10, pady=5, anchor="sw")
         # self.btnReadWifiTx.config(state=tk.DISABLED)
         # self.btnReadWifiRx.config(state=tk.DISABLED)
@@ -127,7 +81,7 @@ class StartPage:
         # self.btnReadTxCalf6.config(state=tk.DISABLED)
         # self.btnReadRxCalf32.config(state=tk.DISABLED)
         # self.btnReadRxCalf5.config(state=tk.DISABLED)
-        self.btnPages.config(state=tk.DISABLED)
+        # self.btnPages.config(state=tk.DISABLED)
         self.btnGrrCalc.config(state=tk.DISABLED)
         self.btnSummaryGRR.config(state=tk.DISABLED)
         # self.btnConcludeGRR.config(state=tk.DISABLED)
@@ -138,30 +92,28 @@ class StartPage:
         self.path = os.path.dirname(os.path.abspath('__file__'))
         self.create_dataDir()
         # self.show_frame(StartPage)
-        self.info_manager = InfoManager(self.txt)
 
+        # print(info_manager.get_info('------'))
         self.frame.pack(side='left', fill=tk.BOTH, expand=False)
         self.txt.pack(side='left')
         self.txt.config(state=tk.DISABLED, spacing1=10, spacing2=5, padx=10, pady=10)
         self.grr_filePath: str = ""
         self.grr_spec = None
-
-        label = tk.Label(self.root, text="This is the Start Page")
-        label.pack(side="top", fill="x", pady=10)
+        self.info_manager = InfoManager(self.txt)
         # button1 = tk.Button(self, text="Go to Page One",
         #                     command=lambda: controller.show_frame(PageOne))
         # button1.pack()
 
     def create_frames(self):
-        container = tk.Frame(self.root)
+        container = tk.Frame(self.master)
         container.pack(side="top", fill="both", expand=True)
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
 
-        for F in (PageOne, PageTwo):
-            frame = F(container, self.root)
-            self.frames[F] = frame
-            frame.grid(row=0, column=0, sticky="nsew")
+        # for F in (PageOne, PageTwo):
+        #     frame = F(container, self.root)
+        #     self.frames[F] = frame
+        #     frame.grid(row=0, column=0, sticky="nsew")
 
     def show_frame(self, cont):
         frame = self.frames[cont]
@@ -172,7 +124,7 @@ class StartPage:
             util_obj = Digest_utils()
             summary_path = os.path.join(self.path, "Summary")
             util_obj.grr_selection(summary_path)
-            self.info_manager.update_info("Selection done", f'{summary_path}')
+            self.info_manager.update_info("GRR Conclusion", f'{summary_path}')
         except Exception as e:
             messagebox.showerror("Conclude GRR NG", "Plz make sure index at last column and retry")
             raise "summary_grr NG >>> " + str(e.args)
@@ -182,7 +134,7 @@ class StartPage:
             util_obj = Digest_utils()
             summary_path = os.path.join(self.path, "Summary")
             util_obj.grr_summary(summary_path)
-            self.info_manager.update_info("Output Summary GRR", f'{summary_path}')
+            self.info_manager.update_info("GRR Summary", f'{summary_path}')
             self.btnConcludeGRR.config(state=tk.ACTIVE)
         except Exception as e:
             messagebox.showerror("Summary NG", "Plz retry")
@@ -214,7 +166,7 @@ class StartPage:
             # for csv_ith, csv in enumerate(grr_csv_):
             #     csv_path_select = os.path.join(csv_data_path, f'{csv}')
 
-            self.info_manager.update_info("Output Gage R&R csv", f'{summary_path}')
+            self.info_manager.update_info("Gage R&R Calculation", f'{summary_path}')
             self.btnSummaryGRR.config(state=tk.ACTIVE)
         except Exception as e:
             raise "calculate GRR err >>> " + str(e.args)
@@ -223,11 +175,12 @@ class StartPage:
         try:
             self.grr_filePath = filedialog.askopenfilename(filetypes=[("Xlsx files", "*.xlsx")])
             if self.grr_filePath:
-                grr_file_path = self.grr_filePath
-                self.info_manager.update_info("Read csv OK", f'File Path {self.grr_filePath}')
-                count_csv = Digest_utils.grr_data_digest(grr_file_path, self.path)
+                # self.info_manager.start_info_manager_thread()
+
+                count_csv = Digest_utils.grr_data_digest(self.grr_filePath, self.path)
                 g_file = [f'GRR{i + 1},' for i in range(int(count_csv))]
-                self.info_manager.update_info("Create .csv", f'{repr(g_file)}.csv')
+                # self.info_manager.update_info("Open", f'File Path {self.grr_filePath}')
+                self.info_manager.update_info("Open .xlsx and create .csv", "csv  ".join(g_file) + ".csv")
                 self.btnGrrCalc.config(state=tk.ACTIVE)
                 self.combo.config(state=tk.ACTIVE)
             else:
@@ -292,15 +245,15 @@ class StartPage:
             raise ValueError(f"Invalid argument: {args[0]}")
 
     def run(self):
-        self.root.protocol("WM_DELETE_WINDOW", self.on_exit)
-        self.info_manager.start_info_manager_thread()
-        self.root.mainloop()
+        self.master.protocol("WM_DELETE_WINDOW", self.on_exit)
+        self.master.mainloop()
 
     def on_exit(self):  # obj: object
         # loop through all windows and destroy them
         for window in self.windows:
             window.destroy()
-        self.root.destroy()
+        self.master.grab_set()  # .grab_release()
+        self.master.destroy()
     # def removeDir(self):
     #     self.info_manager.update_info(" Clear Data in directory ", " Empty Data")
     #     try:
@@ -379,13 +332,9 @@ class PageTwo(tk.Frame):
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-
-    app = StartPage()
-    txt_widget = scrolledtext.ScrolledText(app.txt, font=('Times New Roman', 12), wrap=tk.WORD)
-    txt_widget.pack(expand=True, fill='both', side='left')
-
-    info_manager = InfoManager(txt_widget)
-
-    # app.protocol("WM_DELETE_WINDOW", self.on_exit)
-    # app.mainloop()
+    root = tk.Tk()
+    frame_size = "600x400"
+    root.geometry(frame_size)
+    root.winfo_toplevel().title("< NPI_Analysis_Tool >")
+    app = StartPage(root, title="GRR analysis")
     app.run()
