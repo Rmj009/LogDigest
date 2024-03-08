@@ -3,10 +3,9 @@ import os
 import csv
 import numpy as np
 import pandas as pd
+
+from DelightXlsx import XlsxManager
 from Gage import Gage
-from openpyxl import load_workbook, Workbook
-from openpyxl.utils.dataframe import dataframe_to_rows
-from openpyxl.styles import PatternFill
 
 
 class Digest_utils:
@@ -121,6 +120,7 @@ class Digest_utils:
         """
         # arr_lst = []
         mockup_col_name = []
+        nest_lst = []
         try:
             df = pd.read_csv(f'{csv_path}', header=0, index_col=0)
             mockup_col_name = df.columns[1:-1]
@@ -170,26 +170,6 @@ class Digest_utils:
         except Exception as e:
             raise "xlsx file NG >>>" + str(e.args)
 
-    @staticmethod
-    def digest_by_openpyxl(path):
-        try:
-            wb = load_workbook(path)
-
-            # Iterate over each sheet in the workbook
-            for sheet in wb.sheetnames:
-                # Create a new CSV file for each sheet
-                with open(f'{sheet}.csv', 'w', newline='') as csvfile:
-                    csvwriter = csv.writer(csvfile)
-
-                    # Copy the data from the original sheet to the CSV file
-                    for row in wb[sheet].iter_rows(values_only=True):
-                        csvwriter.writerow(row)
-
-                    # Insert a row with only one value in the first cell
-                    csvwriter.writerow(['Your Value'])  # Insert your desired value here
-        except Exception as e:
-            raise "digest_by_openpyxl NG >>>" + str(e.args)
-
     def grr_summary(self, *args):
         arr_result = []
         path = ""
@@ -217,32 +197,6 @@ class Digest_utils:
             raise "grr_summary NG >>> " + str(e.args)
         return ""
 
-    @staticmethod
-    def highlight_NG(file_path):
-        try:
-            df = pd.read_csv(file_path, header=0, index_col=0)
-            # Create a new Excel workbook and select the active sheet
-            wb = Workbook()
-            ws = wb.active
-
-            # Write the DataFrame to the Excel sheet
-            for r in dataframe_to_rows(df, index=True, header=True):
-                ws.append(r)
-
-            # Apply conditional formatting to highlight values greater than 30
-            # for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=1, max_col=ws.max_column):
-            #     for cell in row:
-            for row in range(2, ws.max_row + 1):
-                for col in range(2, ws.max_column - 6):  # highlight without AVG cols
-                    cell = ws.cell(row=row, column=col)
-                    if cell.value is not None and cell.value > 30:
-                        cell.fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
-
-            # Save the workbook
-            wb.save('highlighted_values.xlsx')
-        except Exception as e:
-            raise "grr_summary NG >>> " + str(e.args)
-
     def grr_selection(self, *args):
         avg_result_lst = []
         grr_result_lst = []
@@ -269,7 +223,7 @@ class Digest_utils:
             _filename = os.path.join(summary_file_path, f'GRR_Result_{formatted_time}.csv')
             # df_result.columns = origin_col_name
             df_result.to_csv(_filename, sep=',')
-            Digest_utils.highlight_NG(_filename)
+            XlsxManager.highlight_NG(df_result)
 
         except Exception as e:
             raise "grr_selection NG >>> " + str(e.args)

@@ -12,7 +12,6 @@ class StartPage(object):
         title = kwargs.pop('title')
         self.master = master
         # super().__init__()
-        global info_manager
         self.windows = []
         self.GGR_option = 0
         self.font = ('Times New Roman', 12, "bold")
@@ -336,6 +335,8 @@ class PageTwo(tk.Frame):
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
+    global countTestItems
+    global info_manager
     root = tk.Tk()
     frame_size = "600x400"
     root.geometry(frame_size)
