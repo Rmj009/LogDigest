@@ -1,14 +1,20 @@
-import datetime
+import io
 import os
-import csv
+import re
+import datetime
 import numpy as np
 import pandas as pd
 
 from DelightXlsx import XlsxManager
 from Gage import Gage
 
+global countTestItems
+global LSL_lst
+global USL_lst
+global testItem_lst
 
-class Digest_utils:
+
+class Digest_utils(object):
     def __int__(self, filepath):
         self.filepath = filepath
 
@@ -223,7 +229,7 @@ class Digest_utils:
             _filename = os.path.join(summary_file_path, f'GRR_Result_{formatted_time}.csv')
             # df_result.columns = origin_col_name
             df_result.to_csv(_filename, sep=',')
-            XlsxManager.highlight_NG(df_result)
+            # XlsxManager.highlight_NG(df_result)
 
         except Exception as e:
             raise "grr_selection NG >>> " + str(e.args)
@@ -546,3 +552,244 @@ class Digest_utils:
             result.to_csv(os.path.join(csvpath, f'WIFI_RX_CALIBRATION_32.csv'), sep=',', encoding='UTF-8')
         except Exception as ee:
             raise f"make Tx Calif32 excel in valid\n" + str(ee.args)
+
+    def digestFiles(self, file_path, csv_writer, file_name):
+        string_to_find = "SPEC:"
+        string_to_find2 = "Value:"
+        try:
+            with open(file_path, 'r', encoding='utf-16') as file:
+                # Iterate through lines in the file
+                for line_number, line in enumerate(file, start=1):
+                    # Check if the line contains the specified string
+                    if string_to_find in line and string_to_find2 in line:
+                        # Write the file name and line to the CSV file
+                        csv_writer.writerow([file_name, f'{line.strip()}'])
+        except UnicodeDecodeError:
+            print(f"Error decoding file {file_name}. Skipping...")
+        except Exception as e:
+            raise "digestFiles$NG >>> " + str(e.args)
+
+    def NG_Open_log_txt(self, directory_path, output_csv_path):
+        keyword1 = "SPEC:"
+        keyword2 = "Value:"
+        ending_keyword = "END MARKED"
+        USL_lst = []
+        LSL_lst = []
+        testItem_lst = []
+        pattern = r"~"
+        try:
+            with open(output_csv_path, 'w', newline='', encoding='utf-16') as txtFile:
+                # csv_writer = csv.writer(csvfile)
+                # Iterate through files in the specified directory
+                for filename in os.listdir(directory_path):
+                    file_path = os.path.join(directory_path, filename)
+                if os.path.isfile(file_path):
+                    with open(file_path, 'r', encoding='utf-16') as file:
+                        for line_number, line in enumerate(file, start=1):
+                            if keyword1 in line and keyword2 in line:
+                                txtFile.write(f'{line.strip()}\n')
+                                # Write the file name and line to the CSV file
+                                # csv_writer.writerow([file_name, f'{line.strip()}'])
+                            if ending_keyword in line:  # stop reading til the end keyword
+                                break
+                            # Find the indices of the keywords in the line
+                            index1 = line.find(keyword1)
+                            index2 = line.find(keyword2)
+                            test_item_name = line[:index1].strip(' ').split(' ')[-1]
+                            testItem_lst.append(test_item_name)
+                            specRange = line[index1 + len(keyword1):index2].strip()
+                            if not re.search(pattern, specRange):
+                                USL_lst.append("PASS")
+                                LSL_lst.append("PASS")
+                            else:
+                                LSL_lst.append(specRange.split('~')[0])
+                                USL_lst.append(specRange.split('~')[1])
+                                # Write the file name and line to the CSV file
+                                # csv_writer.writerow([file_name, f'{line.strip()}']
+            # file.close()
+            txtFile.close()
+            return LSL_lst, USL_lst, testItem_lst
+        except UnicodeDecodeError:
+            print(f"Error decoding file {txtFile}. Skipping...")
+            raise "UnicodeDecodeError"
+        except io.UnsupportedOperation:
+            print("not readable")
+            raise "io exception"
+        except Exception as e:
+            raise "digestFiles$NG >>> " + str(e.args)
+
+    def Open_log_txt(self, file_path, output_csv_path):
+        keyword1 = "SPEC:"
+        keyword2 = "Value:"
+        flag = False
+        USL_lst = []
+        LSL_lst = []
+        testItem_lst = []
+        countStressTimes = 0
+        pattern = r"~"
+        ending_keyword = "END MARKED"
+        IsAllcollected = False
+        try:
+            with open(output_csv_path, 'w', newline='', encoding='utf-16') as txtFile:
+                # csv_writer = csv.writer(csvfile)
+                if os.path.isfile(file_path):
+                    with open(file_path, 'r', encoding='utf-16') as file:
+                        for line_number, line in enumerate(file, start=1):
+                            if ending_keyword in line:  # stop reading til the end keyword
+                                countStressTimes += 1
+                                flag = True
+                            if keyword1 in line and keyword2 in line:
+                            # Find the indices of the keywords in the line
+                                index1 = line.find(keyword1)
+                                index2 = line.find(keyword2)
+                                if not flag:
+                                    test_item_name = line[:index1].strip(' ').split(' ')[-1]
+                                    testItem_lst.append(test_item_name)
+                                # specRange = line[index1 + len(keyword1):index2].strip()
+                                # if not re.search(pattern, specRange):
+                                #     USL_lst.append("PASS")
+                                #     LSL_lst.append("PASS")
+                                # else:
+                                #     LSL_lst.append(specRange.split('~')[0])
+                                #     USL_lst.append(specRange.split('~')[1])
+                                txtFile.write(f'{line.strip()}\n')
+                            # Write the file name and line to the CSV file
+                            # csv_writer.writerow([file_name, f'{line.strip()}'])
+        except UnicodeDecodeError:
+            print(f"Error decoding file {file}. Skipping...")
+        except Exception as e:
+            raise "digestFiles$NG >>> " + str(e.args)
+        print("----------------")
+        # print(countStressTimes)
+        return len(testItem_lst)
+        # return LSL_lst, USL_lst, testItem_lst
+
+    def txt_rush(self, file_path):
+        keyword1 = "SPEC:"
+        keyword2 = "Value:"
+        ending_keyword = "END MARKED"
+        USL_lst = []
+        LSL_lst = []
+        testItem_lst = []
+        pattern = r"~"
+        try:
+            with open(file_path, mode='r', encoding='utf-16', errors='ignore') as file:
+                lines = file.readlines()
+                for line in lines:
+                    if ending_keyword in line:  # stop reading til the end keyword
+                        break
+                    # Find the indices of the keywords in the line
+                    index1 = line.find(keyword1)
+                    index2 = line.find(keyword2)
+                    test_item_name = line[:index1].strip(' ').split(' ')[-1]
+                    testItem_lst.append(test_item_name)
+                    specRange = line[index1 + len(keyword1):index2].strip()
+                    if not re.search(pattern, specRange):
+                        USL_lst.append("PASS")
+                        LSL_lst.append("PASS")
+                    else:
+                        LSL_lst.append(specRange.split('~')[0])
+                        USL_lst.append(specRange.split('~')[1])
+            file.close()
+            if len(testItem_lst) == 5810:
+                print(len(testItem_lst))
+            return LSL_lst, USL_lst, testItem_lst
+        except Exception as e:
+            raise "Open txt NG >>> " + str(e.args)
+
+    def washing(self, file_path, countTestItems):
+        """
+        Diagnosis >>> count test items
+        :return:
+        """
+        # file_path = "C:\\Users\\23002496\\PycharmProjects\\DigestATSuite\\IMQX.csv"
+        keyword1 = "SPEC:"
+        keyword2 = "Value:"
+        proj_name = "SIMPLE.txt"
+        specRange = ""
+        pattern = r"~"
+        testItem_values = ""
+        all_lst = []
+        USL_lst = []
+        LSL_lst = []
+        data_lst = []
+        testItem_lst = []
+        # countTestItems = 5810
+        IsSpecRange_ready = False
+        # file_path = os.path.join(file_path, proj_name)
+        # countStressTimes = 10  # num_lst = 0
+        try:
+            # self.Open_log_txt()
+            with open(file_path, mode='r', encoding='utf-16', errors='ignore') as file:
+                lines = file.readlines()
+                for line in lines:
+                    if len(data_lst) < countTestItems:
+                        # Find the indices of the keywords in the line
+                        index1 = line.find(keyword1)
+                        index2 = line.find(keyword2)
+                        # index3 = line.find(keyword2, index1 + len(keyword1))
+                        if not IsSpecRange_ready:
+                            test_item_name = line[:index1].strip(' ').split(' ')[-1]
+                            testItem_lst.append(test_item_name)
+                            specRange = line[index1 + len(keyword1):index2].strip()
+                            if not re.search(pattern, specRange):
+                                USL_lst.append("PASS")
+                                LSL_lst.append("PASS")
+                            else:
+                                LSL_lst.append(specRange.split('~')[0])
+                                USL_lst.append(specRange.split('~')[1])
+                        if index1 != -1 and index2 != -1:
+                            testItem_values = line[index2 + len(keyword2):].strip()
+                            data_lst.append(testItem_values)
+                    else:
+                        IsSpecRange_ready = True
+                        # countTestItems = len(USL_lst)
+                        all_lst.append(data_lst)
+                        data_lst = []
+                self.pack_result(all_lst, LSL_lst, USL_lst, testItem_lst)
+                # df = pd.DataFrame(np.array(all_lst))
+                # df.index = (df.index[0:] + 2).tolist()
+                # df.loc[0] = pd.Series(LSL_lst)  # insert SPEC
+                # df.loc[1] = pd.Series(USL_lst)  # insert SPEC
+                # df = df.sort_index()
+                # df.columns = pd.Series(testItem_lst)  # insert test item name
+                # df = df.T
+                # df.insert(loc=2, column='AVG', value="")  # df['avg'] = ""
+                # df.insert(loc=3, column='STD', value="")
+                # df.insert(loc=4, column='CPK', value="")
+                # df.rename(columns={0: 'LSL'}, inplace=True)
+                # df.rename(columns={1: 'USL'}, inplace=True)
+                # df.reset_index()
+                # writer = pd.ExcelWriter('trySample.xlsx', engine='xlsxwriter', engine_kwargs={'options': {'strings_to_numbers': True}})
+                # # Convert the dataframe to an XlsxWriter Excel object.
+                # df.to_excel(writer, sheet_name='Sheet1')
+                # XlsxManager.cooking_CPK(None, writer=writer, shape=df.shape)
+            file.close()
+            # return all_lst
+
+        except Exception as e:
+            raise "washing$NG >>> " + str(e.args)
+
+    def pack_result(self, result_list, LSL_lst, USL_lst, testItem_lst):
+        try:
+            # LSL_lst, USL_lst, testItem_lst = self.txt_rush()
+            df = pd.DataFrame(np.array(result_list))
+            df.index = (df.index[0:] + 2).tolist()
+            df.loc[0] = pd.Series(LSL_lst)  # insert SPEC
+            df.loc[1] = pd.Series(USL_lst)  # insert SPEC
+            df = df.sort_index()
+            df.columns = pd.Series(testItem_lst)  # insert test item name
+            df = df.T
+            df.insert(loc=2, column='AVG', value="")  # df['avg'] = ""
+            df.insert(loc=3, column='STD', value="")
+            df.insert(loc=4, column='CPK', value="")
+            df.rename(columns={0: 'LSL'}, inplace=True)
+            df.rename(columns={1: 'USL'}, inplace=True)
+            df.reset_index()
+            writer = pd.ExcelWriter('trySample.xlsx', engine='xlsxwriter', engine_kwargs={'options': {'strings_to_numbers': True}})
+            # Convert the dataframe to an XlsxWriter Excel object.
+            df.to_excel(writer, sheet_name='Sheet1')
+            XlsxManager.cooking_CPK(None, writer=writer, shape=df.shape)
+            # df.to_csv("IMQX_sample.csv", sep=',')
+        except Exception as e:
+            raise "pack_result$NG >>> " + str(e.args)
