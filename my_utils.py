@@ -133,7 +133,8 @@ class Digest_utils(object):
             df_values = df.iloc[2: df.shape[0], 1: df.shape[1] - 1]  # all values
             for w in range(weighted):
                 nest_lst = []
-                for col in range(df_values.shape[1]):  # for row in range(loop_row):  # dut_test_times per dut = 9     loop_row = df.shape[0] - 3
+                for col in range(df_values.shape[
+                                     1]):  # for row in range(loop_row):  # dut_test_times per dut = 9     loop_row = df.shape[0] - 3
                     arr_weight = df_values.iloc[:, col].rolling(w + 2, min_periods=w + 1, center=True).mean().values
                     # nest_lst.append(arr_weight)
                     nest_lst.append(arr_weight)
@@ -141,7 +142,8 @@ class Digest_utils(object):
                 csv_path_ = os.path.join(csv_data_path, csv_file_name)
                 # flat_lst = [item for sublist in arr_lst for item in sublist]
                 flat_lst = [arr for arr in nest_lst]
-                df_result = pd.concat([pd.DataFrame(arr) for arr in flat_lst], axis=1)  # df_result = pd.merge([pd.DataFrame(arr) for arr in flat_lst], on='left')
+                df_result = pd.concat([pd.DataFrame(arr) for arr in flat_lst],
+                                      axis=1)  # df_result = pd.merge([pd.DataFrame(arr) for arr in flat_lst], on='left')
                 df_result.columns = mockup_col_name
                 df_result.to_csv(csv_path_, index=False)
             # print(f'Sheet "{sheet_name}" saved as "{csv_file_name}"')
@@ -639,7 +641,7 @@ class Digest_utils(object):
                                 countStressTimes += 1
                                 flag = True
                             if keyword1 in line and keyword2 in line:
-                            # Find the indices of the keywords in the line
+                                # Find the indices of the keywords in the line
                                 index1 = line.find(keyword1)
                                 index2 = line.find(keyword2)
                                 if not flag:
@@ -660,8 +662,8 @@ class Digest_utils(object):
         except Exception as e:
             raise "digestFiles$NG >>> " + str(e.args)
         print("----------------")
-        # print(countStressTimes)
-        return len(testItem_lst)
+        result = (countStressTimes, len(testItem_lst))
+        return result
         # return LSL_lst, USL_lst, testItem_lst
 
     def txt_rush(self, file_path):
@@ -697,7 +699,7 @@ class Digest_utils(object):
         except Exception as e:
             raise "Open txt NG >>> " + str(e.args)
 
-    def washing(self, file_path, countTestItems):
+    def washing(self, file_path, df_info):
         """
         Diagnosis >>> count test items
         :return:
@@ -714,10 +716,9 @@ class Digest_utils(object):
         LSL_lst = []
         data_lst = []
         testItem_lst = []
-        # countTestItems = 5810
+        countTestItems = df_info[1]  # 5810
         IsSpecRange_ready = False
-        # file_path = os.path.join(file_path, proj_name)
-        # countStressTimes = 10  # num_lst = 0
+        countStressTimes = df_info[0]  # num_lst = 0
         try:
             # self.Open_log_txt()
             with open(file_path, mode='r', encoding='utf-16', errors='ignore') as file:
@@ -786,7 +787,8 @@ class Digest_utils(object):
             df.rename(columns={0: 'LSL'}, inplace=True)
             df.rename(columns={1: 'USL'}, inplace=True)
             df.reset_index()
-            writer = pd.ExcelWriter('trySample.xlsx', engine='xlsxwriter', engine_kwargs={'options': {'strings_to_numbers': True}})
+            writer = pd.ExcelWriter('trySample.xlsx', engine='xlsxwriter',
+                                    engine_kwargs={'options': {'strings_to_numbers': True}})
             # Convert the dataframe to an XlsxWriter Excel object.
             df.to_excel(writer, sheet_name='Sheet1')
             XlsxManager.cooking_CPK(None, writer=writer, shape=df.shape)

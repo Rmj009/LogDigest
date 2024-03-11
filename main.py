@@ -187,12 +187,13 @@ class StartPage(object):
                 # self.info_manager.start_info_manager_thread()
                 util_obj = Digest_utils()
                 # util_obj.txt_rush(logPath)
-                countTestItems = util_obj.Open_log_txt(logPath, os.path.join(Dir_DataLogs, projName_file))
+                df_info = util_obj.Open_log_txt(logPath, os.path.join(Dir_DataLogs, projName_file))
+                print(df_info)
                 files = os.listdir(Dir_DataLogs)
                 # Sort the files based on modification time (newest first)
                 files.sort(key=lambda x: os.path.getmtime(os.path.join(Dir_DataLogs, x)), reverse=True)
-                util_obj.washing(os.path.join(Dir_DataLogs, files[0]), countTestItems)
-                self.btnGrrCalc.config(state=tk.ACTIVE)
+                util_obj.washing(os.path.join(Dir_DataLogs, files[0]), df_info)
+                self.btnGrrCalc.config(state=tk.ACTIVE) if df_info[0] > 90 else None
                 self.combo.config(state=tk.ACTIVE)
             else:
                 messagebox.showerror("Error File Type", "Err file reload file again")
