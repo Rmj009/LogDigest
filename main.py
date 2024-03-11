@@ -36,13 +36,15 @@ class StartPage(object):
         # self.combo.place(x=5, y=5)
         # self.combo.pack(side='top', padx=5, pady=5, anchor="w")
         self.btnOpen = tk.Button(self.frame, text="Open", command=lambda: self.open_grr_file())  # self.chooseFile()
+        self.btnOpenLog = tk.Button(self.frame, text="Open", command=lambda: self.open_log_txt())  # self.chooseFile()
         self.btnSummaryGRR = tk.Button(self.frame, text="GRR Summary", command=lambda: self.summary_grr())
         self.btnConcludeGRR = tk.Button(self.frame, text="GRR Conclusion", command=lambda: self.final_grr())
         self.btnGrrCalc = tk.Button(self.frame, text="GRR Calculation",
                                     command=lambda: self.calc_grr())  # self.chooseFile()
         # self.btnPages = tk.Button(self.frame, text="open pages", command=lambda: self.create_frames())
 
-        self.btnOpen.pack(side='top', padx=10, pady=5, anchor="w")
+        # self.btnOpen.pack(side='top', padx=10, pady=5, anchor="w")
+        self.btnOpenLog.pack(side='top', padx=10, pady=5, anchor="w")
         self.btnGrrCalc.pack(side='top', padx=10, pady=5, anchor="w")
         self.btnSummaryGRR.pack(side='top', padx=10, pady=5, anchor="w")
         self.btnConcludeGRR.pack(side='top', padx=10, pady=5, anchor="w")
@@ -169,6 +171,36 @@ class StartPage(object):
             self.btnSummaryGRR.config(state=tk.ACTIVE)
         except Exception as e:
             raise "calculate GRR err >>> " + str(e.args)
+
+    def open_log_txt(self):
+        directory_path = "D:\Analysis_tool_20230321\ParseLog\IMQX"
+        proj = "IMQX"
+        projName_file = f'{proj}.csv'
+        Dir_DataLogs = os.path.join(self.path, "DataLog")
+        countTestItems = 0
+        try:
+            if not os.path.exists(Dir_DataLogs):
+                os.mkdir(Dir_DataLogs)
+            if logPath := filedialog.askopenfilename(filetypes=[("Text files", "*.txt")]):
+                # os.path.isfile(logPath)
+                self.info_manager.update_info("Open log", f'File Path {logPath}')
+                # self.info_manager.start_info_manager_thread()
+                util_obj = Digest_utils()
+                # util_obj.txt_rush(logPath)
+                countTestItems = util_obj.Open_log_txt(logPath, os.path.join(Dir_DataLogs, projName_file))
+                files = os.listdir(Dir_DataLogs)
+                # Sort the files based on modification time (newest first)
+                files.sort(key=lambda x: os.path.getmtime(os.path.join(Dir_DataLogs, x)), reverse=True)
+                util_obj.washing(os.path.join(Dir_DataLogs, files[0]), countTestItems)
+                self.btnGrrCalc.config(state=tk.ACTIVE)
+                self.combo.config(state=tk.ACTIVE)
+            else:
+                messagebox.showerror("Error File Type", "Err file reload file again")
+                return False
+        except Exception as e:
+            messagebox.showerror("FILE_ERR", "Plz reload file")
+            raise "log file NG >>> " + str(e.args)
+        return True
 
     def open_grr_file(self):
         try:

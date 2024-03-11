@@ -62,7 +62,7 @@ class Gage:
             varComp_total_variation = varComp_total_RageRR + varComp_part_to_part
             # grr_op = varComp_op ** (1/2)
             # grr_op_dut = varComp_op_dut ** (1/2)
-            reproducibility = varComp_op ** (1/2) if p_value3 >= 0.05 else (varComp_op + varComp_op_dut) ** (1/2)
+            reproducibility = varComp_op ** (1 / 2) if p_value3 >= 0.05 else (varComp_op + varComp_op_dut) ** (1 / 2)
             total_RageRR = (reproducibility ** 2 + varComp_Repeatability) ** (1 / 2)
             total_variation = (total_RageRR ** 2 + varComp_part_to_part) ** (1 / 2)
             grr_tolerance = total_RageRR * 6 / range_spec * 100
@@ -89,7 +89,8 @@ class Gage:
             overall_average = np.nan if np.isnan(np.mean(arr_3d)) else np.mean(arr_3d)
             op_mean_lst = [np.mean(arr_3d[x]) for x in range(grr_shape2)]  # shape >>> (3, 10, 3)
             dut_op_mean_lst = [np.mean(arr_3d[i], axis=1) for i in range(grr_shape0)]
-            dut_mean_lst = [np.mean([arr_3d[0][i], arr_3d[1][i], arr_3d[2][i]]) for i in range(grr_shape1)]  # Average of DUT_A, Average of DUT_B, Average of DUT_C
+            dut_mean_lst = [np.mean([arr_3d[0][i], arr_3d[1][i], arr_3d[2][i]]) for i in
+                            range(grr_shape1)]  # Average of DUT_A, Average of DUT_B, Average of DUT_C
             # print("OP-mean", op_mean_lst)  # Average of DUT_A, Average of DUT_B, Average of DUT_C
             # print("Average of DUT:", overall_average)
             # print("dut_op_mean_lst:", dut_op_mean_lst)
@@ -109,7 +110,8 @@ class Gage:
             grr_shape1 = arr_3d.shape[1]
             grr_shape2 = arr_3d.shape[2]
 
-            overall_average, op_mean_lst, dut_op_mean_lst, dut_mean_lst = Gage.cooking_mean(arr_3d, grr_shape0, grr_shape1, grr_shape2)
+            overall_average, op_mean_lst, dut_op_mean_lst, dut_mean_lst = Gage.cooking_mean(arr_3d, grr_shape0,
+                                                                                            grr_shape1, grr_shape2)
             overall_trans = [(i - overall_average) ** 2 for i in arr_3d]  # total transform
             # print("RR_trans:", overall_trans)
             for j in range(grr_shape1):
@@ -166,10 +168,10 @@ class Gage:
                 return np.nan
             p_value1 = 1 - f.cdf(F1, df_dut, df_repeat)
             p_value2 = 1 - f.cdf(F2, df_op, df_repeat)
-            p_value3 = 1 - f.cdf(F3, df_dut_op, df_repeat)
+            # p_value3 = 1 - f.cdf(F3, df_dut_op, df_repeat)
             ## https: // www.geeksforgeeks.org / how - to - perform - an - f - test - in -python /
             ## Table 2 without interaction as if p_value3 >= 0.05
-            if p_value3 > 0.05:
+            if (p_value3 := 1 - f.cdf(F3, df_dut_op, df_repeat)) > 0.05:
                 MS_0_t2 = np.sum(SS_DUT) / df_dut
                 MS_1_t2 = SS_OP / df_op
                 MS_2_t2 = (SS_DUT_op + SS_Repeatability) / (df_repeat + df_dut_op)
