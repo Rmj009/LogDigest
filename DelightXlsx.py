@@ -3,6 +3,7 @@ import csv
 # from openpyxl.utils.dataframe import dataframe_to_rows
 # from openpyxl.styles import PatternFill
 import xlsxwriter
+from xlsxwriter.utility import xl_rowcol_to_cell, xl_col_to_name
 
 global countTestItems
 global stressTestTimes
@@ -11,37 +12,38 @@ global stressTestTimes
 class XlsxManager(object):
 
     def __int__(self):
-        self.countTestItems = 5810
-        self.stressTestTimes = stressTestTimes
+        pass
 
-    def cooking_CPK(self, df):
+    def cooking_CPK(self, writer, shape):
 
         try:
-            # Create a new Excel workbook and add a worksheet
-            workbook = xlsxwriter.Workbook('example.xlsx')
-            worksheet = workbook.add_worksheet()
-
-            # Insert a new column before setting formulas
-            worksheet.insert_column('C')  # TEMP
-            worksheet.insert_column('D')
-            worksheet.insert_column('E')
-            worksheet.insert_column('F')
-
+            # Get the xlsxwriter objects from the dataframe writer object.
+            workbook = writer.book
+            worksheet = writer.sheets['Sheet1']
             # Set a formula for each cell in the row
-            row_num = 0  # Row number
+            df_row_num = shape[0]  # Row number
+            df_col_num = shape[1]  # Col number
             start_col = 4  # Start column number (after the inserted column)
-            end_col = 7  # End column number (for example)
-            for row in range(2, stressTestTimes):
-                for col_num in range(start_col, end_col + 1):
-                    cell_ref = xlsxwriter.utility.xl_rowcol_to_cell(row_num, col_num)
-                    formula = f'=IFERROR(AVERAGE(G{row + 2}:AP{row + 2}), "N/A")'
-                    worksheet.write_formula(cell_ref, formula)
-                    formula = f'=IFERROR(STDEV(G{row + 2}:AP{row + 2}), "N/A")'
-                    worksheet.write_formula(cell_ref, formula)
-                    formula = f'=IFERROR(MIN((C{row + 2} - D{row + 2}) / (3 * E{row + 2}),(D{row + 2} - B{row + 2})/ (3 * E{row + 2})),"N/A")'
-                    worksheet.write_formula(cell_ref, formula)
-
+            end_col = 6  # End column number (for example)
+            corresponding_column = xl_col_to_name(df_col_num - 5)  # col_alphabet = 'AO'  # annotate upon column
+            # get rid of extra added columns: AVG, STD, CPK, LSL, USL
+            for row in range(1, df_row_num + 1):
+                for col_num in range(start_col, end_col):
+                    formula = f'=IFERROR(AVERAGE(G{row + 1}:{corresponding_column}{row + 1}), "N/A")'
+                    worksheet.write_formula(f'D{row + 1}', formula)
+            # ---------------------------------------------------------------------------
+            for row in range(1, df_row_num + 1):
+                for col_num in range(start_col, end_col):
+                    formula = f'=IFERROR(STDEV(G{row + 1}:{corresponding_column}{row + 1}), "N/A")'
+                    worksheet.write_formula(f'E{row + 1}', formula)
+            # ---------------------------------------------------------------------------
+            for row in range(1, df_row_num + 1):
+                for col_num in range(start_col, end_col):
+                    formula = f'=IFERROR(MIN((C{row + 1} - D{row + 1}) / (3 * E{row + 1}),(D{row + 1} - B{row + 1})/ (3 * E{row + 1})),"N/A")'
+                    worksheet.write_formula(f'F{row + 1}', formula)
+                    # worksheet.write_formula(cell_ref, formula)
             # Close the workbook
+            # Saving the modified Excel file in default (that is Excel 2003) format
             workbook.close()
         except Exception as e:
             raise "cooking_CPK$NG >>> " + str(e.args)
@@ -49,32 +51,32 @@ class XlsxManager(object):
     # def Openpyxl_cooking_CPK(self, df):
     #
     #     try:
-            # Load the workbook
-            # wb = Workbook()
-            # sheet = wb.active
-            # Write the DataFrame to the Excel sheet
-            # for r in dataframe_to_rows(df, index=True, header=True):
-            #     sheet.append(r)
-            # Set values for cells in the row
-            # for col_num in range(5810):  # Assuming 10 columns
-            #     sheet.cell(row=1, column=col_num, value=col_num)
+    # Load the workbook
+    # wb = Workbook()
+    # sheet = wb.active
+    # Write the DataFrame to the Excel sheet
+    # for r in dataframe_to_rows(df, index=True, header=True):
+    #     sheet.append(r)
+    # Set values for cells in the row
+    # for col_num in range(5810):  # Assuming 10 columns
+    #     sheet.cell(row=1, column=col_num, value=col_num)
 
-            # Set a formula for each cell in the row
-        #     sheet.insert_cols(2)
-        #     sheet.insert_cols(2)
-        #     sheet.insert_cols(2)
-        #     for row in range(5810):
-        #         cell = sheet.cell(row=row + 1, column=4)
-        #         cell.formula = f'=IFERROR(AVERAGE(G{row + 2}:AP{row + 2}), "N/A")'
-        #         cell = sheet.cell(row=row + 1, column=5)
-        #         cell.formula = f'=IFERROR(STDEV(G{row + 2}:AP{row + 2}), "N/A")'
-        #         cell = sheet.cell(row=row + 1, column=6)
-        #         cell.formula = f'=IFERROR(MIN((C{row + 2} - D{row + 2}) / (3 * E{row + 2}),(D{row + 2} - B{row + 2})/ (3 * E{row + 2})),"N/A")'
-        #
-        #     # Save the workbook
-        #     wb.save('example.xlsx')
-        # except Exception as e:
-        #     raise "cooking_CPK$NG >>> " + str(e.args)
+    # Set a formula for each cell in the row
+    #     sheet.insert_cols(2)
+    #     sheet.insert_cols(2)
+    #     sheet.insert_cols(2)
+    #     for row in range(5810):
+    #         cell = sheet.cell(row=row + 1, column=4)
+    #         cell.formula = f'=IFERROR(AVERAGE(G{row + 2}:AP{row + 2}), "N/A")'
+    #         cell = sheet.cell(row=row + 1, column=5)
+    #         cell.formula = f'=IFERROR(STDEV(G{row + 2}:AP{row + 2}), "N/A")'
+    #         cell = sheet.cell(row=row + 1, column=6)
+    #         cell.formula = f'=IFERROR(MIN((C{row + 2} - D{row + 2}) / (3 * E{row + 2}),(D{row + 2} - B{row + 2})/ (3 * E{row + 2})),"N/A")'
+    #
+    #     # Save the workbook
+    #     wb.save('example.xlsx')
+    # except Exception as e:
+    #     raise "cooking_CPK$NG >>> " + str(e.args)
 
     # @staticmethod
     # def highlight_NG(df):
