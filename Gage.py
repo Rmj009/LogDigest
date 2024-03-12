@@ -1,3 +1,4 @@
+import math
 import numpy as np
 from scipy.stats import f
 
@@ -8,10 +9,6 @@ class Gage:
         self.USL = USL
         self.LSL = LSL
         self.range_spec = self.USL - self.LSL
-
-    def __repr__(self):
-        print(self.USL, self.LSL, self.range_spec)
-        return self.range_spec
 
     def grr_contribution(self, *args):
         # -------------- Gage contribution --------------
@@ -41,8 +38,8 @@ class Gage:
 
     def grr_variance(self, *args):
         # -------------- GRR_Variance --------------
-        range_spec = self
-        grr_shape1, grr_shape2, MS_0, MS_1, MS_2, MS_3, MS_0_t2, MS_1_t2, MS_2_t2, p_value1, p_value3, F3 = args
+        # range_spec = self
+        range_spec, grr_shape1, grr_shape2, MS_0, MS_1, MS_2, MS_3, MS_0_t2, MS_1_t2, MS_2_t2, p_value1, p_value3, F3 = args
         try:
             # if MS_0_t2 == np.none:
             #     pass
@@ -66,6 +63,7 @@ class Gage:
             total_RageRR = (reproducibility ** 2 + varComp_Repeatability) ** (1 / 2)
             total_variation = (total_RageRR ** 2 + varComp_part_to_part) ** (1 / 2)
             grr_tolerance = total_RageRR * 6 / range_spec * 100
+
             # print("varComp_op: ", varComp_op)
             # print("varComp_op_dut: ", varComp_op_dut)
             # print("varComp_part_to_part: ", varComp_part_to_part)
@@ -80,8 +78,10 @@ class Gage:
             # print("grr_tolerance: ", grr_tolerance)
 
         except Exception as e:
-            raise print(" -------------- Gage Variance -------------- \r\n" + str(e.args))
-        return np.nan if np.isnan(F3) else grr_tolerance
+            # raise print(" -------------- Gage Variance -------------- \r\n" + str(e.args))
+            print(" -------------- Gage Variance -------------- \r\n" + str(e.args))
+            return np.nan
+        return np.nan if math.isinf(grr_tolerance) else grr_tolerance
 
     @staticmethod
     def cooking_mean(arr_3d: np.array, grr_shape0, grr_shape1, grr_shape2):
@@ -89,15 +89,15 @@ class Gage:
             overall_average = np.nan if np.isnan(np.mean(arr_3d)) else np.mean(arr_3d)
             op_mean_lst = [np.mean(arr_3d[x]) for x in range(grr_shape2)]  # shape >>> (3, 10, 3)
             dut_op_mean_lst = [np.mean(arr_3d[i], axis=1) for i in range(grr_shape0)]
-            dut_mean_lst = [np.mean([arr_3d[0][i], arr_3d[1][i], arr_3d[2][i]]) for i in
-                            range(grr_shape1)]  # Average of DUT_A, Average of DUT_B, Average of DUT_C
+            dut_mean_lst = [np.mean([arr_3d[0][i], arr_3d[1][i], arr_3d[2][i]]) for i in range(grr_shape1)]  # Average of DUT_A, Average of DUT_B, Average of DUT_C
             # print("OP-mean", op_mean_lst)  # Average of DUT_A, Average of DUT_B, Average of DUT_C
             # print("Average of DUT:", overall_average)
             # print("dut_op_mean_lst:", dut_op_mean_lst)
             # print("dut_mean_lst:", dut_mean_lst)
         except Exception as ex:
             print(" cooking_mean NG >>> " + str(ex.args))
-            raise ex.args
+            return np.nan
+            # raise ex.args
         return overall_average, op_mean_lst, dut_op_mean_lst, dut_mean_lst
 
     def cooking_grr(self, *args):
@@ -110,8 +110,7 @@ class Gage:
             grr_shape1 = arr_3d.shape[1]
             grr_shape2 = arr_3d.shape[2]
 
-            overall_average, op_mean_lst, dut_op_mean_lst, dut_mean_lst = Gage.cooking_mean(arr_3d, grr_shape0,
-                                                                                            grr_shape1, grr_shape2)
+            overall_average, op_mean_lst, dut_op_mean_lst, dut_mean_lst = Gage.cooking_mean(arr_3d, grr_shape0, grr_shape1, grr_shape2)
             overall_trans = [(i - overall_average) ** 2 for i in arr_3d]  # total transform
             # print("RR_trans:", overall_trans)
             for j in range(grr_shape1):
@@ -195,14 +194,17 @@ class Gage:
             # print("p_value2_t2: ", p_value2_t2)
             # print('-----------------------------------------')
             # -------------- GRR_Variance --------------
-            grr_tolerance = Gage.grr_variance(self.range_spec, grr_shape1, grr_shape2,
+            grr_tolerance = self.grr_variance(self.range_spec, grr_shape1, grr_shape2,
                                               MS_0, MS_1, MS_2, MS_3, MS_0_t2, MS_1_t2, MS_2_t2, p_value1, p_value3, F3)
 
         except RuntimeWarning as ex:
-            raise "divide failure => " + str(ex.args)
+            # raise "divide failure => " + str(ex.args)
+            print(f"RuntimeWarning$NG >>> " + str(ex.args))
+            return np.nan
         except Exception as ex:
             print(f"calc" + str(ex.args))
-            raise "calc failure => " + str(ex.args)
+            return np.nan
+            # raise "calc failure => " + str(ex.args)
         return np.nan if np.isnan(F1) else grr_tolerance
 
 # if __name__ == '__main__':
