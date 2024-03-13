@@ -3,6 +3,7 @@ import os
 import re
 import datetime
 import numpy as np
+import openpyxl
 import pandas as pd
 
 from DelightXlsx import XlsxManager
@@ -12,19 +13,23 @@ global countTestItems
 global LSL_lst
 global USL_lst
 global testItem_lst
+global project_name
 
 
-class Digest_utils(object):
-    def __int__(self, filepath):
+class Digest_utils:
+    def __init__(self, filepath):  # proj_alias
         self.filepath = filepath
+        # self.proj_alias = project_name
 
-    def grr_calculation(data: np.array, spec_range) -> str:
+    def grr_calculation(self, data: np.array, USL, LSL) -> str:
         """
         loop columns to calc
         """
         try:
-            USL = float(spec_range[0])
-            LSL = float(spec_range[1])
+            # USL = float(spec_range[0])
+            # LSL = float(spec_range[1])
+            USL = float(USL)
+            LSL = float(LSL)
             # df_testItem = pd.DataFrame(np.array(df.iloc[:, col_nth]).reshape(10, 9))
             df_testItem = pd.DataFrame(data)
             # df_testItem = df_testItem.T
@@ -42,7 +47,7 @@ class Digest_utils(object):
             raise "grr_calculation NG >>> " + str(e.args)
         return grr_value
 
-    def grr_cooking(self, pwd: str, csv_path, avg_weigh):
+    def grr_cooking(self, pwd: str, csv_path, avg_weigh):  # vertical GRR calc
         """
         split dataframe into A,B,C blocks
         :return:
@@ -51,24 +56,47 @@ class Digest_utils(object):
         avg_lst = [f'AVG{avg_weigh}']
 
         try:
-
-            csv_data_path = os.path.join(pwd, "DataCSV")
-            if not os.path.exists(csv_data_path):
-                os.mkdir(csv_data_path)
             df = pd.read_csv(f'{csv_path}', header=0, index_col=0)
             spec_array = df.iloc[[0, 1]].values[:, 1:]
             df = df.iloc[2:, :-1]  # ignore last column
             for i in range(df.shape[1] - 1):
                 select_arr_ith = np.array(df.iloc[:, i + 1]).reshape(10, 9)
                 avg_lst.append(np.mean(select_arr_ith))
-                grr_lst.append(Digest_utils.grr_calculation(select_arr_ith, spec_array[:, i]))
+                grr_lst.append(self.grr_calculation(select_arr_ith, spec_array[:, i]))
             # df_result = pd.concat([df.iloc[:3], result, df.iloc[3:]]).reset_index(drop=True)
 
         except Exception as e:
             raise "grr_cooking NG >>> " + str(e.args)
-        return self.grr_packing(pwd, csv_path, avg_lst, grr_lst, avg_weigh)
+        return self.grr_packingCsv(pwd, csv_path, avg_lst, grr_lst, avg_weigh)
 
-    def grr_packing(self, *args):
+    def grr_roasting(self, data_path, avg_weigh):  # vertical GRR calc
+        """
+        split dataframe into A,B,C blocks
+        :return:
+        """
+        grr_lst = []
+        try:
+            # Load the workbook
+            wb = openpyxl.load_workbook(data_path, data_only=False)
+
+            # Get the active sheet
+            sheet = wb.active
+
+            # Get the values from column A
+            column_values = [sheet[f'D{i}'].value for i in range(1, sheet.max_row + 1)]
+            df = pd.read_excel(data_path, header=0, index_col=0, engine='openpyxl')
+            LSL = df['LSL']
+            USL = df['USL']
+            avg_lst = df['AVG']
+            for i, row in df.iterrows():
+                select_arr_ith = np.array(row[4:94]).reshape(10, 9)
+                grr_lst.append(self.grr_calculation(select_arr_ith, LSL[i], USL[i]))
+
+        except Exception as e:
+            raise "grr_roasting NG >>> " + str(e.args)
+        return self.grr_packingXlsx(data_path, avg_lst, grr_lst, avg_weigh)
+
+    def grr_packingCsv(self, *args):
         pwd, csv_path, avg_lst, grr_lst, avg_weigh = args
         current_time = datetime.datetime.now()
         formatted_time = current_time.strftime(f'%H%M%S')
@@ -89,6 +117,26 @@ class Digest_utils(object):
             df_pack = df_pack.sort_index()
             summary_file_path = os.path.join(summary_path, f'GRR_avg{avg_weigh}_{formatted_time}.csv')
             df_pack.to_csv(summary_file_path, sep=',')
+        except Exception as e:
+            raise "grr_packing NG >>>" + str(e.args)
+
+    def grr_packingXlsx(self, *args):
+        data_path, avg_lst, grr_lst, avg_weigh = args
+        current_time = datetime.datetime.now()
+        formatted_time = current_time.strftime(f'%H%M%S')
+        try:
+            summary_path = os.path.join(self.filepath, "Summary")
+            df_pack = pd.read_excel(f'{data_path}', header=0, index_col=0)
+            grr_lst = [np.nan if val == 'NAN' else str(val) for val in grr_lst]
+            #  ------------- add GRR attribute -------------
+            # df_pack.index = df_pack.index[:2].tolist() + (df_pack.index[2:] + 1).tolist()
+            # df_pack.loc[2] = np.array(grr_lst)
+            aaaaaaa = pd.Series(grr_lst)
+            df_pack.insert(5, f'GRR{avg_weigh}', grr_lst)
+            df_pack[f'GRR{avg_weigh}'] = ["222" for i in range(35)]
+            # df_pack = df_pack.sort_index()
+            summary_file_path = os.path.join(summary_path, f'GRR_avg{avg_weigh}_{formatted_time}.xlsx')
+            df_pack.to_excel(summary_file_path, engine='xlsxwriter')
         except Exception as e:
             raise "grr_packing NG >>>" + str(e.args)
 
@@ -157,7 +205,6 @@ class Digest_utils(object):
             #     grr_data.loc['A'].apply(lambda x: x.rolling(window=2).mean())
 
         except Exception as e:
-
             raise "xlsx file NG >>>" + str(e.args)
 
     def digest_xlsx(self, *args):
@@ -169,7 +216,6 @@ class Digest_utils(object):
             # Iterate over each sheet and save it as a CSV file
             for idx, sheet_name in enumerate(sheet_names):
                 df = pd.read_excel(xls, sheet_name)
-                mockup_col_name = df.columns
                 csv_file_name = f'GRR{idx + 1}.csv'
                 csv_path_ = os.path.join(csv_data_path, csv_file_name)
                 df = df.sort_index()
@@ -621,6 +667,9 @@ class Digest_utils(object):
             raise "digestFiles$NG >>> " + str(e.args)
 
     def Open_log_txt(self, file_path, output_csv_path):
+        global testItem_lst
+        global USL_lst
+        global LSL_lst
         keyword1 = "SPEC:"
         keyword2 = "Value:"
         flag = False
@@ -631,6 +680,8 @@ class Digest_utils(object):
         pattern = r"~"
         ending_keyword = "END MARKED"
         IsAllcollected = False
+        global project_name
+        proj = "IMQX"
         try:
             with open(output_csv_path, 'w', newline='', encoding='utf-16') as txtFile:
                 # csv_writer = csv.writer(csvfile)
@@ -647,13 +698,13 @@ class Digest_utils(object):
                                 if not flag:
                                     test_item_name = line[:index1].strip(' ').split(' ')[-1]
                                     testItem_lst.append(test_item_name)
-                                # specRange = line[index1 + len(keyword1):index2].strip()
-                                # if not re.search(pattern, specRange):
-                                #     USL_lst.append("PASS")
-                                #     LSL_lst.append("PASS")
-                                # else:
-                                #     LSL_lst.append(specRange.split('~')[0])
-                                #     USL_lst.append(specRange.split('~')[1])
+                                    specRange = line[index1 + len(keyword1):index2].strip()
+                                    if not re.search(pattern, specRange):
+                                        USL_lst.append("PASS")
+                                        LSL_lst.append("PASS")
+                                    else:
+                                        LSL_lst.append(specRange.split('~')[0])
+                                        USL_lst.append(specRange.split('~')[1])
                                 txtFile.write(f'{line.strip()}\n')
                             # Write the file name and line to the CSV file
                             # csv_writer.writerow([file_name, f'{line.strip()}'])
@@ -666,44 +717,12 @@ class Digest_utils(object):
         return result
         # return LSL_lst, USL_lst, testItem_lst
 
-    def txt_rush(self, file_path):
-        keyword1 = "SPEC:"
-        keyword2 = "Value:"
-        ending_keyword = "END MARKED"
-        USL_lst = []
-        LSL_lst = []
-        testItem_lst = []
-        pattern = r"~"
-        try:
-            with open(file_path, mode='r', encoding='utf-16', errors='ignore') as file:
-                lines = file.readlines()
-                for line in lines:
-                    if ending_keyword in line:  # stop reading til the end keyword
-                        break
-                    # Find the indices of the keywords in the line
-                    index1 = line.find(keyword1)
-                    index2 = line.find(keyword2)
-                    test_item_name = line[:index1].strip(' ').split(' ')[-1]
-                    testItem_lst.append(test_item_name)
-                    specRange = line[index1 + len(keyword1):index2].strip()
-                    if not re.search(pattern, specRange):
-                        USL_lst.append("PASS")
-                        LSL_lst.append("PASS")
-                    else:
-                        LSL_lst.append(specRange.split('~')[0])
-                        USL_lst.append(specRange.split('~')[1])
-            file.close()
-            if len(testItem_lst) == 5810:
-                print(len(testItem_lst))
-            return LSL_lst, USL_lst, testItem_lst
-        except Exception as e:
-            raise "Open txt NG >>> " + str(e.args)
-
     def washing(self, file_path, df_info):
         """
         Diagnosis >>> count test items
         :return:
         """
+        global testItem_lst
         # file_path = "C:\\Users\\23002496\\PycharmProjects\\DigestATSuite\\IMQX.csv"
         keyword1 = "SPEC:"
         keyword2 = "Value:"
@@ -712,69 +731,41 @@ class Digest_utils(object):
         pattern = r"~"
         testItem_values = ""
         all_lst = []
-        USL_lst = []
-        LSL_lst = []
+        # USL_lst = []
+        # LSL_lst = []
         data_lst = []
-        testItem_lst = []
+        # testItem_lst = []
         countTestItems = df_info[1]  # 5810
-        IsSpecRange_ready = False
-        countStressTimes = df_info[0]  # num_lst = 0
         try:
             # self.Open_log_txt()
             with open(file_path, mode='r', encoding='utf-16', errors='ignore') as file:
                 lines = file.readlines()
                 for line in lines:
+                    # Find the indices of the keywords in the line
+                    index1 = line.find(keyword1)
+                    index2 = line.find(keyword2)
                     if len(data_lst) < countTestItems:
-                        # Find the indices of the keywords in the line
-                        index1 = line.find(keyword1)
-                        index2 = line.find(keyword2)
-                        # index3 = line.find(keyword2, index1 + len(keyword1))
-                        if not IsSpecRange_ready:
-                            test_item_name = line[:index1].strip(' ').split(' ')[-1]
-                            testItem_lst.append(test_item_name)
-                            specRange = line[index1 + len(keyword1):index2].strip()
-                            if not re.search(pattern, specRange):
-                                USL_lst.append("PASS")
-                                LSL_lst.append("PASS")
-                            else:
-                                LSL_lst.append(specRange.split('~')[0])
-                                USL_lst.append(specRange.split('~')[1])
                         if index1 != -1 and index2 != -1:
                             testItem_values = line[index2 + len(keyword2):].strip()
                             data_lst.append(testItem_values)
                     else:
-                        IsSpecRange_ready = True
-                        # countTestItems = len(USL_lst)
+                        # if index1 != -1 and index2 != -1:
+                        #     testItem_values = line[index2 + len(keyword2):].strip()
+                        #     data_lst.append(testItem_values)
                         all_lst.append(data_lst)
+                        testItem_values = line[index2 + len(keyword2):].strip()
                         data_lst = []
+                        data_lst.append(testItem_values)
                 self.pack_result(all_lst, LSL_lst, USL_lst, testItem_lst)
-                # df = pd.DataFrame(np.array(all_lst))
-                # df.index = (df.index[0:] + 2).tolist()
-                # df.loc[0] = pd.Series(LSL_lst)  # insert SPEC
-                # df.loc[1] = pd.Series(USL_lst)  # insert SPEC
-                # df = df.sort_index()
-                # df.columns = pd.Series(testItem_lst)  # insert test item name
-                # df = df.T
-                # df.insert(loc=2, column='AVG', value="")  # df['avg'] = ""
-                # df.insert(loc=3, column='STD', value="")
-                # df.insert(loc=4, column='CPK', value="")
-                # df.rename(columns={0: 'LSL'}, inplace=True)
-                # df.rename(columns={1: 'USL'}, inplace=True)
-                # df.reset_index()
-                # writer = pd.ExcelWriter('trySample.xlsx', engine='xlsxwriter', engine_kwargs={'options': {'strings_to_numbers': True}})
-                # # Convert the dataframe to an XlsxWriter Excel object.
-                # df.to_excel(writer, sheet_name='Sheet1')
-                # XlsxManager.cooking_CPK(None, writer=writer, shape=df.shape)
             file.close()
-            # return all_lst
 
         except Exception as e:
             raise "washing$NG >>> " + str(e.args)
 
     def pack_result(self, result_list, LSL_lst, USL_lst, testItem_lst):
+        df = pd.DataFrame(np.array(result_list))
         try:
             # LSL_lst, USL_lst, testItem_lst = self.txt_rush()
-            df = pd.DataFrame(np.array(result_list))
             df.index = (df.index[0:] + 2).tolist()
             df.loc[0] = pd.Series(LSL_lst)  # insert SPEC
             df.loc[1] = pd.Series(USL_lst)  # insert SPEC
@@ -789,9 +780,23 @@ class Digest_utils(object):
             df.reset_index()
             writer = pd.ExcelWriter('trySample.xlsx', engine='xlsxwriter',
                                     engine_kwargs={'options': {'strings_to_numbers': True}})
-            # Convert the dataframe to an XlsxWriter Excel object.
             df.to_excel(writer, sheet_name='Sheet1')
             XlsxManager.cooking_CPK(None, writer=writer, shape=df.shape)
-            # df.to_csv("IMQX_sample.csv", sep=',')
+        except IOError as e:
+            print("Xlsx File already open! >>> " + str(e.args))
         except Exception as e:
             raise "pack_result$NG >>> " + str(e.args)
+        finally:
+            pass
+
+    def result_display(self, *args):
+        try:
+            switcher = {
+                0: "Horizontal",
+                1: "Vertical",
+            }
+            return switcher.get(args[0], "$$$")
+        except Exception as e:
+            raise "xlsx result display$NG >>>" + str(e.args)
+        finally:
+            print(args)
