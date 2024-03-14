@@ -8,19 +8,21 @@ import os
 
 
 class StartPage(object):
+    global project_name
+
     def __init__(self, master, **kwargs):
         title = kwargs.pop('title')
         self.master = master
         # super().__init__()
         self.windows = []
         self.GGR_option = 0
-        self.font = ('Times New Roman', 12, "bold")
+        self.font = ('Times New Roman', 9, "bold")
         self.frame = tk.Frame(master, bg='gray66', width=100, height=160)
         self.txt = tk.Text(master, font=self.font, width=200, height=150, wrap=tk.WORD)
         label = tk.Label(master, text=title)
         label.pack(side="top", fill=tk.BOTH, pady=10)
-        # self.label = tk.Label(self.frame, font=self.font, text="NPI_Analysis_Tool", justify='left')
-        # self.label.pack(side='top', padx=5, pady=5)
+        self.label = tk.Label(self.frame, font=self.font, text="Keyword: END MARKED", justify='left')
+        self.label.pack(side='top', padx=5, pady=5)
 
         self.combo = ttk.Combobox(self.frame, state="readonly", values=["GGR1", "GGR2", "GGR3", "GGR4", "GGR5"])
         # # label
@@ -35,19 +37,19 @@ class StartPage(object):
         self.combo.set("GRR1")
         # self.combo.place(x=5, y=5)
         # self.combo.pack(side='top', padx=5, pady=5, anchor="w")
-        self.btnOpen = tk.Button(self.frame, text="Open", command=lambda: self.open_grr_file())  # self.chooseFile()
-        self.btnOpenLog = tk.Button(self.frame, text="Open", command=lambda: self.open_log_txt())  # self.chooseFile()
+        self.btnOpen = tk.Button(self.frame, text="Open", command=lambda: self.open_grr_file())
+        self.btnOpenLog = tk.Button(self.frame, text="Open", command=lambda: self.open_log_txt())
         self.btnSummaryGRR = tk.Button(self.frame, text="GRR Summary", command=lambda: self.summary_grr())
         self.btnConcludeGRR = tk.Button(self.frame, text="GRR Conclusion", command=lambda: self.final_grr())
-        self.btnGrrCalc = tk.Button(self.frame, text="GRR Calculation",
-                                    command=lambda: self.calc_grr())  # self.chooseFile()
+        # self.btnGrrCalc = tk.Button(self.frame, text="GRR Calculation",
+        #                             command=lambda: #####GRR2~GRR5)  # self.chooseFile()
         # self.btnPages = tk.Button(self.frame, text="open pages", command=lambda: self.create_frames())
 
         # self.btnOpen.pack(side='top', padx=10, pady=5, anchor="w")
         self.btnOpenLog.pack(side='top', padx=10, pady=5, anchor="w")
-        self.btnGrrCalc.pack(side='top', padx=10, pady=5, anchor="w")
-        self.btnSummaryGRR.pack(side='top', padx=10, pady=5, anchor="w")
-        self.btnConcludeGRR.pack(side='top', padx=10, pady=5, anchor="w")
+        # self.btnGrrCalc.pack(side='top', padx=10, pady=5, anchor="w")
+        # self.btnSummaryGRR.pack(side='top', padx=10, pady=5, anchor="w")
+        # self.btnConcludeGRR.pack(side='top', padx=10, pady=5, anchor="w")
         # self.btnPages.pack(side='top', padx=10, pady=5, anchor="w")
         # self.btnReadWifiTx = tk.Button(self.frame, text="Yield WIFI_TX_table", command=lambda: self.ReadRawData("Tx"))
 
@@ -75,6 +77,9 @@ class StartPage(object):
         # self.btnReadRxCalf5.pack(side='top', padx=10, pady=5, anchor="w")
         self.btnExit = tk.Button(self.frame, text="Close", command=lambda: master.quit())
         self.btnExit.pack(side='bottom', padx=10, pady=5, anchor="sw")
+        self.btnSummaryGRR.config(state=tk.DISABLED)
+        self.btnConcludeGRR.config(state=tk.DISABLED)
+        self.combo.config(state=tk.DISABLED)
         # self.btnReadWifiTx.config(state=tk.DISABLED)
         # self.btnReadWifiRx.config(state=tk.DISABLED)
         # self.btnReadWifiBeam.config(state=tk.DISABLED)
@@ -83,10 +88,7 @@ class StartPage(object):
         # self.btnReadRxCalf32.config(state=tk.DISABLED)
         # self.btnReadRxCalf5.config(state=tk.DISABLED)
         # self.btnPages.config(state=tk.DISABLED)
-        self.btnGrrCalc.config(state=tk.DISABLED)
-        self.btnSummaryGRR.config(state=tk.DISABLED)
-        self.btnConcludeGRR.config(state=tk.DISABLED)
-        self.combo.config(state=tk.DISABLED)
+        # self.btnGrrCalc.config(state=tk.DISABLED)
         # self.txt_widget = scrolledtext.ScrolledText(self.frameTxt, font=self.font, wrap=tk.WORD)
         # self.txt_widget.pack(expand=True, fill='both')
 
@@ -101,6 +103,10 @@ class StartPage(object):
         self.grr_filePath: str = ""
         self.grr_spec = None
         self.info_manager = InfoManager(self.txt)
+        self.util_obj = Digest_utils(self.path)
+        self.summary_path = os.path.join(self.path, "Summary")
+        self.Data_logs = os.path.join(self.path, "DataLog")
+
         # button1 = tk.Button(self, text="Go to Page One",
         #                     command=lambda: controller.show_frame(PageOne))
         # button1.pack()
@@ -122,84 +128,89 @@ class StartPage(object):
 
     def final_grr(self):
         try:
-            util_obj = Digest_utils()
-            summary_path = os.path.join(self.path, "Summary")
-            util_obj.grr_selection(summary_path)
-            self.info_manager.update_info("GRR Conclusion", f'{summary_path}')
+            self.util_obj.grr_selection(self.summary_path)
+            self.info_manager.update_info("GRR Conclusion", f'{self.summary_path}')
         except Exception as e:
             messagebox.showerror("Conclude GRR NG", "Plz make sure index at last column and retry")
             raise "summary_grr NG >>> " + str(e.args)
 
     def summary_grr(self):
         try:
-            util_obj = Digest_utils()
-            summary_path = os.path.join(self.path, "Summary")
-            util_obj.grr_summary(summary_path)
-            self.info_manager.update_info("GRR Summary", f'{summary_path}')
+            self.util_obj.grr_summary(self.summary_path)
+            self.info_manager.update_info("GRR Summary", f'{self.summary_path}')
             self.btnConcludeGRR.config(state=tk.ACTIVE)
         except Exception as e:
             messagebox.showerror("Summary NG", "Plz retry")
             raise "summary_grr NG >>> " + str(e.args)
 
     def calc_grr(self):
-        filepath = self.grr_filePath
         try:
-            util_obj = Digest_utils()
             # csv_ith = self.combo.get()[3]  # need debug
-            csv_data_path = os.path.join(self.path, "DataCSV")
-            summary_path = os.path.join(self.path, "Summary")
-            if not os.path.exists(summary_path):
-                os.mkdir(summary_path)
-                print("Directory '% s' created" % summary_path)
+            if not os.path.exists(self.summary_path):
+                os.mkdir(self.summary_path)
             else:
-                all_grr_csv = os.listdir(summary_path)
+                all_grr_csv = os.listdir(self.summary_path)
                 for file in all_grr_csv:
                     if file.endswith(".csv"):
-                        file_path = os.path.join(summary_path, file)
+                        file_path = os.path.join(self.summary_path, file)
                         os.remove(file_path)
                         print(f'remove csv >>>{file_path}')
-            if not os.path.exists(csv_data_path):
-                os.mkdir(csv_data_path)
+            # data_path = os.path.join(self.Data_logs, f'trySample.xlsx')
+            data_path = os.path.join(self.path, f'trySample.xlsx')
+            self.util_obj.grr_roasting(data_path, 0)
+            """
+            GRR for multiple averaging
+
+            csv_path_select = os.path.join(csv_data_path, f'{csv}')
             grr_csv_ = os.listdir(csv_data_path)
             for avg_weigh, csv in enumerate(grr_csv_):
-                csv_path_select = os.path.join(csv_data_path, f'{csv}')
-                util_obj.grr_cooking(self.path, csv_path_select, avg_weigh)
+                self.util_obj.grr_cooking(self.path, csv_path_select, avg_weigh)
+            # =================================================================
+            """
             # for csv_ith, csv in enumerate(grr_csv_):
             #     csv_path_select = os.path.join(csv_data_path, f'{csv}')
 
-            self.info_manager.update_info("Gage R&R Calculation", f'{summary_path}')
+            self.info_manager.update_info("Gage R&R Calculation", f'{self.summary_path}')
             self.btnSummaryGRR.config(state=tk.ACTIVE)
         except Exception as e:
             raise "calculate GRR err >>> " + str(e.args)
 
     def open_log_txt(self):
-        directory_path = "D:\Analysis_tool_20230321\ParseLog\IMQX"
         proj = "IMQX"
         projName_file = f'{proj}.csv'
-        Dir_DataLogs = os.path.join(self.path, "DataLog")
         countTestItems = 0
+        countStressTime = 0
+        df_info = (countTestItems, countStressTime)
         try:
-            if not os.path.exists(Dir_DataLogs):
-                os.mkdir(Dir_DataLogs)
+            if not os.path.exists(self.Data_logs):
+                os.mkdir(self.Data_logs)
             if logPath := filedialog.askopenfilename(filetypes=[("Text files", "*.txt")]):
                 # os.path.isfile(logPath)
-                self.info_manager.update_info("Open log", f'File Path {logPath}')
                 # self.info_manager.start_info_manager_thread()
-                util_obj = Digest_utils()
-                # util_obj.txt_rush(logPath)
-                df_info = util_obj.Open_log_txt(logPath, os.path.join(Dir_DataLogs, projName_file))
-                print(df_info)
-                files = os.listdir(Dir_DataLogs)
+                df_info = self.util_obj.Open_log_txt(logPath, os.path.join(self.Data_logs, projName_file))
+                files = os.listdir(self.Data_logs)
                 # Sort the files based on modification time (newest first)
-                files.sort(key=lambda x: os.path.getmtime(os.path.join(Dir_DataLogs, x)), reverse=True)
-                util_obj.washing(os.path.join(Dir_DataLogs, files[0]), df_info)
-                self.btnGrrCalc.config(state=tk.ACTIVE) if df_info[0] > 90 else None
+                files.sort(key=lambda x: os.path.getmtime(os.path.join(self.Data_logs, x)), reverse=True)
+                Naming_log = os.path.splitext(os.path.basename(logPath))[0]
+                self.util_obj.washing(os.path.join(self.Data_logs, files[0]), df_info, Naming_log)
+                if df_info[0] < 90:
+                    self.info_manager.update_info("Open log",
+                                                  f'Test_Items: {df_info[1]}         Stress_times: {df_info[0]} '
+                                                  f'\r\n  StressTest under 90,  cannot run GRR')
+                else:
+                    self.calc_grr()
+                    # self.btnGrrCalc.config(state=tk.ACTIVE)
+                    self.info_manager.update_info("Open log",
+                                                  f'Test_Items: {df_info[1]}         Stress_times: {df_info[0]}')
+
                 self.combo.config(state=tk.ACTIVE)
+
             else:
                 messagebox.showerror("Error File Type", "Err file reload file again")
+                self.info_manager.update_info("Open NG", "Try reload file again")
                 return False
         except Exception as e:
-            messagebox.showerror("FILE_ERR", "Plz reload file")
+            messagebox.showerror("FILE_ERR", "Invalid data log or EngMode data, Plz reload file")
             raise "log file NG >>> " + str(e.args)
         return True
 
@@ -211,13 +222,12 @@ class StartPage(object):
             if self.grr_filePath:
                 # self.info_manager.start_info_manager_thread()
                 if y_or_n == 'yes':
-                    util_obj = Digest_utils()
                     count_csv = 3
-                    util_obj.grr_data_digest(self.grr_filePath, self.path)
+                    self.util_obj.grr_data_digest(self.grr_filePath)
                     g_file = [f'GRR{i + 1},' for i in range(int(count_csv))]
                     self.info_manager.update_info("Open .xlsx average by users", f'File Path {self.grr_filePath}')
                     self.info_manager.update_info("Open .xlsx and create .csv", "csv  ".join(g_file) + ".csv")
-                self.btnGrrCalc.config(state=tk.ACTIVE)
+                # self.btnGrrCalc.config(state=tk.ACTIVE)
                 self.combo.config(state=tk.ACTIVE)
             else:
                 messagebox.showerror("No FILE", "Plz reload file")
@@ -290,6 +300,18 @@ class StartPage(object):
             window.destroy()
         self.master.grab_set()  # .grab_release()
         self.master.destroy()
+
+    def number_to_string(self, argument):
+        match argument:
+            case 0:
+                return "zero"
+            case 1:
+                return "one"
+            case 2:
+                return "two"
+            case default:
+                return "something"
+
     # def removeDir(self):
     #     self.info_manager.update_info(" Clear Data in directory ", " Empty Data")
     #     try:

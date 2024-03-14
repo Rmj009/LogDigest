@@ -5,7 +5,8 @@ import datetime
 import numpy as np
 import openpyxl
 import pandas as pd
-
+from openpyxl.styles import PatternFill
+from openpyxl.formatting.rule import CellIsRule
 from DelightXlsx import XlsxManager
 from Gage import Gage
 
@@ -17,8 +18,9 @@ global project_name
 
 
 class Digest_utils:
-    def __init__(self, filepath):  # proj_alias
-        self.filepath = filepath
+    def __init__(self, pwd):  # proj_alias
+        self.pwd = pwd
+        self.xlsxInstance = XlsxManager()
         # self.proj_alias = project_name
 
     def grr_calculation(self, data: np.array, USL, LSL) -> str:
@@ -44,7 +46,9 @@ class Digest_utils:
             grr_instance = Gage(grr_data, LSL, USL)
             grr_value = grr_instance.cooking_grr(grr_data)
         except Exception as e:
-            raise "grr_calculation NG >>> " + str(e.args)
+            print("grr_calculation NG >>> " + str(e.args))
+            return np.nan
+            # raise "grr_calculation NG >>> " + str(e.args)
         return grr_value
 
     def grr_cooking(self, pwd: str, csv_path, avg_weigh):  # vertical GRR calc
@@ -90,11 +94,49 @@ class Digest_utils:
             avg_lst = df['AVG']
             for i, row in df.iterrows():
                 select_arr_ith = np.array(row[4:94]).reshape(10, 9)
-                grr_lst.append(self.grr_calculation(select_arr_ith, LSL[i], USL[i]))
+                grr_lst.append(self.grr_calculation(select_arr_ith, USL[i], LSL[i]))
 
         except Exception as e:
             raise "grr_roasting NG >>> " + str(e.args)
-        return self.grr_packingXlsx(data_path, avg_lst, grr_lst, avg_weigh)
+        return self.grr_packingXlsx(data_path, grr_lst, avg_weigh)
+
+    def grr_packingXlsx(self, *args):
+        data_path, grr_lst, avg_weigh = args
+        current_time = datetime.datetime.now()
+        formatted_time = current_time.strftime(f'%H%M%S')
+        try:
+            summary_path = os.path.join(self.pwd, "Summary")
+            wb = openpyxl.load_workbook(data_path, data_only=False)
+            # Get the active sheet
+            sheet = wb.active
+            grr_lst = [np.nan if val == 'NAN' else str(val) for val in grr_lst]
+            num_lst = [(str(i+1)) for i in range(sheet.max_row)]
+            sheet.insert_cols(7)
+            rename_lst = ["GRR"] + num_lst
+
+            for row_num, value in enumerate(grr_lst, start=2):
+                sheet.cell(row=row_num, column=7, value=value)
+            # renaming the num of data column, while extra add GRR
+            for col_num, new_num in enumerate(rename_lst, start=1):
+                sheet.cell(row=1, column=col_num+6, value=new_num)
+            # Apply conditional formatting
+            red_fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')
+            for cell in sheet['G']:
+                cell_letter = cell.coordinate
+                if cell_letter != 'G1' and float(cell.value) > 30:
+                    sheet.conditional_formatting.add(cell_letter, CellIsRule(operator='greaterThan', formula=['30'], fill=red_fill))
+
+            #  ------------- add GRR attribute -------------
+            # df_pack.index = df_pack.index[:2].tolist() + (df_pack.index[2:] + 1).tolist()
+            # df_pack.loc[2] = np.array(grr_lst)
+            # df_pack.insert(5, f'GRR{avg_weigh}', grr_lst)
+            # df_pack[f'GRR{avg_weigh}'] = ["222" for i in range(35)]
+            # df_pack = df_pack.sort_index()
+            summary_file_path = os.path.join(summary_path, f'GRR_avg{avg_weigh}_{formatted_time}.xlsx')
+            wb.save(summary_file_path)
+            # df_pack.to_excel(summary_file_path, engine='xlsxwriter')
+        except Exception as e:
+            raise "grr_packing NG >>>" + str(e.args)
 
     def grr_packingCsv(self, *args):
         pwd, csv_path, avg_lst, grr_lst, avg_weigh = args
@@ -120,31 +162,11 @@ class Digest_utils:
         except Exception as e:
             raise "grr_packing NG >>>" + str(e.args)
 
-    def grr_packingXlsx(self, *args):
-        data_path, avg_lst, grr_lst, avg_weigh = args
-        current_time = datetime.datetime.now()
-        formatted_time = current_time.strftime(f'%H%M%S')
-        try:
-            summary_path = os.path.join(self.filepath, "Summary")
-            df_pack = pd.read_excel(f'{data_path}', header=0, index_col=0)
-            grr_lst = [np.nan if val == 'NAN' else str(val) for val in grr_lst]
-            #  ------------- add GRR attribute -------------
-            # df_pack.index = df_pack.index[:2].tolist() + (df_pack.index[2:] + 1).tolist()
-            # df_pack.loc[2] = np.array(grr_lst)
-            aaaaaaa = pd.Series(grr_lst)
-            df_pack.insert(5, f'GRR{avg_weigh}', grr_lst)
-            df_pack[f'GRR{avg_weigh}'] = ["222" for i in range(35)]
-            # df_pack = df_pack.sort_index()
-            summary_file_path = os.path.join(summary_path, f'GRR_avg{avg_weigh}_{formatted_time}.xlsx')
-            df_pack.to_excel(summary_file_path, engine='xlsxwriter')
-        except Exception as e:
-            raise "grr_packing NG >>>" + str(e.args)
-
     def grr_data_digest(self, *args, **kwargs) -> np.array:
-        filepath, pwd = args
+        filepath = args
 
         try:
-            csv_data_path = os.path.join(pwd, "DataCSV")
+            csv_data_path = os.path.join(self.pwd, "DataLog")
             if not os.path.exists(csv_data_path):
                 os.mkdir(csv_data_path)
                 print("Directory '% s' created" % csv_data_path)
@@ -715,9 +737,8 @@ class Digest_utils:
         print("----------------")
         result = (countStressTimes, len(testItem_lst))
         return result
-        # return LSL_lst, USL_lst, testItem_lst
 
-    def washing(self, file_path, df_info):
+    def washing(self, file_path, df_info, result_fileName):
         """
         Diagnosis >>> count test items
         :return:
@@ -726,13 +747,8 @@ class Digest_utils:
         # file_path = "C:\\Users\\23002496\\PycharmProjects\\DigestATSuite\\IMQX.csv"
         keyword1 = "SPEC:"
         keyword2 = "Value:"
-        proj_name = "SIMPLE.txt"
-        specRange = ""
         pattern = r"~"
-        testItem_values = ""
         all_lst = []
-        # USL_lst = []
-        # LSL_lst = []
         data_lst = []
         # testItem_lst = []
         countTestItems = df_info[1]  # 5810
@@ -741,10 +757,12 @@ class Digest_utils:
             with open(file_path, mode='r', encoding='utf-16', errors='ignore') as file:
                 lines = file.readlines()
                 for line in lines:
+                    if "TestWarning" in line or "EngMode" in line:
+                        raise Exception("engineering mode, invalid parsing")
                     # Find the indices of the keywords in the line
                     index1 = line.find(keyword1)
                     index2 = line.find(keyword2)
-                    if len(data_lst) < countTestItems:
+                    if len(data_lst) < countTestItems:                         # try to debug this part
                         if index1 != -1 and index2 != -1:
                             testItem_values = line[index2 + len(keyword2):].strip()
                             data_lst.append(testItem_values)
@@ -756,15 +774,16 @@ class Digest_utils:
                         testItem_values = line[index2 + len(keyword2):].strip()
                         data_lst = []
                         data_lst.append(testItem_values)
-                self.pack_result(all_lst, LSL_lst, USL_lst, testItem_lst)
+                self.pack_result(all_lst, LSL_lst, USL_lst, testItem_lst, result_fileName)
             file.close()
 
         except Exception as e:
             raise "washing$NG >>> " + str(e.args)
 
-    def pack_result(self, result_list, LSL_lst, USL_lst, testItem_lst):
-        df = pd.DataFrame(np.array(result_list))
+    def pack_result(self, result_list, LSL_lst, USL_lst, testItem_lst, result_fileName):
+
         try:
+            df = pd.DataFrame(np.array(result_list))
             # LSL_lst, USL_lst, testItem_lst = self.txt_rush()
             df.index = (df.index[0:] + 2).tolist()
             df.loc[0] = pd.Series(LSL_lst)  # insert SPEC
@@ -778,10 +797,10 @@ class Digest_utils:
             df.rename(columns={0: 'LSL'}, inplace=True)
             df.rename(columns={1: 'USL'}, inplace=True)
             df.reset_index()
-            writer = pd.ExcelWriter('trySample.xlsx', engine='xlsxwriter',
+            writer = pd.ExcelWriter(f'{result_fileName}.xlsx', engine='xlsxwriter',
                                     engine_kwargs={'options': {'strings_to_numbers': True}})
             df.to_excel(writer, sheet_name='Sheet1')
-            XlsxManager.cooking_CPK(None, writer=writer, shape=df.shape)
+            self.xlsxInstance.cooking_xCPK(writer=writer, shape=df.shape)
         except IOError as e:
             print("Xlsx File already open! >>> " + str(e.args))
         except Exception as e:

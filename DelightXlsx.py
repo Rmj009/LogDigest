@@ -11,7 +11,7 @@ global stressTestTimes
 
 class XlsxManager(object):
 
-    def __int__(self):
+    def __init__(self):
         pass
 
     def cooking_CPK(self, writer, shape):
@@ -26,6 +26,7 @@ class XlsxManager(object):
             start_col = 4  # Start column number (after the inserted column)
             end_col = 6  # End column number (for example)
             corresponding_column = xl_col_to_name(df_col_num - 5)  # col_alphabet = 'AO'  # annotate upon column
+            format1 = workbook.add_format({"bg_color": "#FFC7CE", "font_color": "#9C0006"})
             # get rid of extra added columns: AVG, STD, CPK, LSL, USL
             for row in range(1, df_row_num + 1):
                 for col_num in range(start_col, end_col):
@@ -44,6 +45,10 @@ class XlsxManager(object):
                     # worksheet.write_formula(cell_ref, formula)
             # Close the workbook
             # Saving the modified Excel file in default (that is Excel 2003) format
+            # Write a conditional format over a range.
+            worksheet.conditional_format(
+                f'F1:F{df_row_num}', {"type": "cell", "criteria": "<", "value": 1.33, "format": format1}
+            )
             workbook.close()
         except Exception as e:
             raise "cooking_CPK$NG >>> " + str(e.args)
