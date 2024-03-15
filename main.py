@@ -18,36 +18,42 @@ class StartPage(object):
         self.GGR_option = 0
         self.font = ('Times New Roman', 9, "bold")
         self.frame = tk.Frame(master, bg='gray66', width=100, height=160)
+        self.frame.grid(row=0, column=0, padx=10, pady=5)
         self.txt = tk.Text(master, font=self.font, width=200, height=150, wrap=tk.WORD)
-        label = tk.Label(master, text=title)
-        label.pack(side="top", fill=tk.BOTH, pady=10)
+        label = tk.Label(self.frame, text=title)
+        label.grid(row=0, column=0, padx=10, pady=5)
+        # label.pack(side="top", fill=tk.BOTH, pady=10)
         self.label = tk.Label(self.frame, font=self.font, text="Keyword: END MARKED", justify='left')
-        self.label.pack(side='top', padx=5, pady=5)
+        # self.label.pack(side='top', padx=5, pady=5)
 
-        self.combo = ttk.Combobox(self.frame, state="readonly", values=["GGR1", "GGR2", "GGR3", "GGR4", "GGR5"])
-        # # label
-        # ttk.Label(self.frame, text="Select the Month :",
-        #           font=("Times New Roman", 10)).grid(column=0,
-        #                                              row=5, padx=10, pady=25)
-        # # Combobox creation
-        # n = tk.StringVar()
-        # ggr_lst = ttk.Combobox(self.frame, width=27, textvariable=n)
-        # ggr_lst['values'] = ('GGR1', 'GGR2', 'GGR3', 'GGR4', 'GGR5')
-        # self.combo.bind("<<ComboboxSelected>>", self.handle_selection(event=self.btnGrrCalc.config(state=tk.ACTIVE)))
-        self.combo.set("GRR1")
-        # self.combo.place(x=5, y=5)
-        # self.combo.pack(side='top', padx=5, pady=5, anchor="w")
+        # self.combo = ttk.Combobox(self.frame, state="readonly", values=["GGR1", "GGR2", "GGR3", "GGR4", "GGR5"])
+        # self.btnPages = tk.Button(self.frame, text="open pages", command=lambda: self.create_frames())
         self.btnOpen = tk.Button(self.frame, text="Open", command=lambda: self.open_grr_file())
         self.btnOpenLog = tk.Button(self.frame, text="Open", command=lambda: self.open_log_txt())
         self.btnSummaryGRR = tk.Button(self.frame, text="GRR Summary", command=lambda: self.summary_grr())
         self.btnConcludeGRR = tk.Button(self.frame, text="GRR Conclusion", command=lambda: self.final_grr())
-        # self.btnGrrCalc = tk.Button(self.frame, text="GRR Calculation",
-        #                             command=lambda: #####GRR2~GRR5)  # self.chooseFile()
-        # self.btnPages = tk.Button(self.frame, text="open pages", command=lambda: self.create_frames())
+        self.btnGrrCalc = tk.Button(self.frame, text="GRR Calculation",
+                                    command=lambda: None)  # self.chooseFile()
 
-        # self.btnOpen.pack(side='top', padx=10, pady=5, anchor="w")
-        self.btnOpenLog.pack(side='top', padx=10, pady=5, anchor="w")
-        # self.btnGrrCalc.pack(side='top', padx=10, pady=5, anchor="w")
+        # Combobox creation
+        n = tk.StringVar(self.frame, "1")
+        values = {"GRR": "1",
+                  "GRR weight": "5"}
+
+        # ggr_lst = ttk.Combobox(self.frame, width=27, textvariable=n)
+        # ggr_lst['values'] = ('GGR1', 'GGR2', 'GGR3', 'GGR4', 'GGR5')
+        # self.combo.bind("<<ComboboxSelected>>", self.handle_selection(event=self.btnGrrCalc.config(state=tk.ACTIVE)))
+        # self.combo.set("GRR1")
+        # self.combo.place(x=5, y=5)
+        self.btnOpen.grid(row=1, column=0, padx=10, pady=10, rowspan=True)
+        self.btnOpenLog.grid(row=2, column=0, padx=10, pady=10, rowspan=True, columnspan=3)
+        # self.combo.pack(side='top', padx=5, pady=5, anchor="w")
+        # tk.Label(self.frame, text="What is your favorite car barnd?").grid(row=0, column=0, columnspan=3, pady=10, padx=10)
+        # for (text, value) in values.items():
+        tk.Radiobutton(self.frame, text="Y", variable=n, value=0).grid(row=3, column=0, padx=10, pady=10, rowspan=1)
+        tk.Radiobutton(self.frame, text="N", variable=n, value=1).grid(row=4, column=0, padx=10, pady=10, rowspan=1)
+
+        self.btnGrrCalc.grid(row=5, column=0, padx=10, pady=10, rowspan=True)
         # self.btnSummaryGRR.pack(side='top', padx=10, pady=5, anchor="w")
         # self.btnConcludeGRR.pack(side='top', padx=10, pady=5, anchor="w")
         # self.btnPages.pack(side='top', padx=10, pady=5, anchor="w")
@@ -76,10 +82,10 @@ class StartPage(object):
         # self.btnReadRxCalf32.pack(side='top', padx=10, pady=5, anchor="w")
         # self.btnReadRxCalf5.pack(side='top', padx=10, pady=5, anchor="w")
         self.btnExit = tk.Button(self.frame, text="Close", command=lambda: master.quit())
-        self.btnExit.pack(side='bottom', padx=10, pady=5, anchor="sw")
+        self.btnExit.grid(row=20, column=0, padx=10, pady=10, rowspan=True)
         self.btnSummaryGRR.config(state=tk.DISABLED)
         self.btnConcludeGRR.config(state=tk.DISABLED)
-        self.combo.config(state=tk.DISABLED)
+        # self.combo.config(state=tk.DISABLED)
         # self.btnReadWifiTx.config(state=tk.DISABLED)
         # self.btnReadWifiRx.config(state=tk.DISABLED)
         # self.btnReadWifiBeam.config(state=tk.DISABLED)
@@ -104,7 +110,7 @@ class StartPage(object):
         self.grr_spec = None
         self.info_manager = InfoManager(self.txt)
         self.util_obj = Digest_utils(self.path)
-        self.summary_path = os.path.join(self.path, "Summary")
+        self.summary_path = os.path.join(self.path, "Result")
         self.Data_logs = os.path.join(self.path, "DataLog")
 
         # button1 = tk.Button(self, text="Go to Page One",
@@ -144,6 +150,7 @@ class StartPage(object):
             raise "summary_grr NG >>> " + str(e.args)
 
     def calc_grr(self):
+        global origin_log_fileName
         try:
             # csv_ith = self.combo.get()[3]  # need debug
             if not os.path.exists(self.summary_path):
@@ -156,7 +163,7 @@ class StartPage(object):
                         os.remove(file_path)
                         print(f'remove csv >>>{file_path}')
             # data_path = os.path.join(self.Data_logs, f'trySample.xlsx')
-            data_path = os.path.join(self.path, f'trySample.xlsx')
+            data_path = os.path.join(self.path, f'{origin_log_fileName}.xlsx')
             self.util_obj.grr_roasting(data_path, 0)
             """
             GRR for multiple averaging
@@ -181,18 +188,21 @@ class StartPage(object):
         countTestItems = 0
         countStressTime = 0
         df_info = (countTestItems, countStressTime)
+        global origin_log_fileName
         try:
             if not os.path.exists(self.Data_logs):
                 os.mkdir(self.Data_logs)
-            if logPath := filedialog.askopenfilename(filetypes=[("Text files", "*.txt")]):
+            if logPath := filedialog.askopenfilename(title='Select Files',
+                                                     filetypes=[('Text files', '*.txt'), ('All files', '*.*')]):
                 # os.path.isfile(logPath)
+                overall_txt_ = [f for f in logPath]
                 # self.info_manager.start_info_manager_thread()
                 df_info = self.util_obj.Open_log_txt(logPath, os.path.join(self.Data_logs, projName_file))
                 files = os.listdir(self.Data_logs)
                 # Sort the files based on modification time (newest first)
                 files.sort(key=lambda x: os.path.getmtime(os.path.join(self.Data_logs, x)), reverse=True)
-                Naming_log = os.path.splitext(os.path.basename(logPath))[0]
-                self.util_obj.washing(os.path.join(self.Data_logs, files[0]), df_info, Naming_log)
+                origin_log_fileName = os.path.splitext(os.path.basename(logPath))[0]
+                self.util_obj.washing(os.path.join(self.Data_logs, files[0]), df_info, origin_log_fileName)
                 if df_info[0] < 90:
                     self.info_manager.update_info("Open log",
                                                   f'Test_Items: {df_info[1]}         Stress_times: {df_info[0]} '
@@ -203,7 +213,7 @@ class StartPage(object):
                     self.info_manager.update_info("Open log",
                                                   f'Test_Items: {df_info[1]}         Stress_times: {df_info[0]}')
 
-                self.combo.config(state=tk.ACTIVE)
+                # self.combo.config(state=tk.ACTIVE)
 
             else:
                 messagebox.showerror("Error File Type", "Err file reload file again")
@@ -216,17 +226,16 @@ class StartPage(object):
 
     def open_grr_file(self):
         try:
-            y_or_n = messagebox.askquestion("Question", "Weighted Average by users")  # yes,  no
+            # y_or_n = messagebox.askquestion("Question", "Weighted Average by users")  if y_or_n == 'yes': # yes,  no
             # self.grr_filePath = filedialog.askopenfilename(filetypes=[("Xlsx files", "*.xlsx")])
             self.grr_filePath = filedialog.askopenfilename()
             if self.grr_filePath:
                 # self.info_manager.start_info_manager_thread()
-                if y_or_n == 'yes':
-                    count_csv = 3
-                    self.util_obj.grr_data_digest(self.grr_filePath)
-                    g_file = [f'GRR{i + 1},' for i in range(int(count_csv))]
-                    self.info_manager.update_info("Open .xlsx average by users", f'File Path {self.grr_filePath}')
-                    self.info_manager.update_info("Open .xlsx and create .csv", "csv  ".join(g_file) + ".csv")
+                count_csv = 3
+                self.util_obj.grr_data_digest(self.grr_filePath)
+                g_file = [f'GRR{i + 1},' for i in range(int(count_csv))]
+                self.info_manager.update_info("Open .xlsx average by users", f'File Path {self.grr_filePath}')
+                self.info_manager.update_info("Open .xlsx and create .csv", "csv  ".join(g_file) + ".csv")
                 # self.btnGrrCalc.config(state=tk.ACTIVE)
                 self.combo.config(state=tk.ACTIVE)
             else:

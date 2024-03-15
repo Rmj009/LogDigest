@@ -3,9 +3,9 @@ import os
 import re
 import datetime
 import numpy as np
-import openpyxl
 import pandas as pd
-from openpyxl.styles import PatternFill
+import openpyxl
+from openpyxl.styles import Font, PatternFill
 from openpyxl.formatting.rule import CellIsRule
 from DelightXlsx import XlsxManager
 from Gage import Gage
@@ -82,16 +82,13 @@ class Digest_utils:
         try:
             # Load the workbook
             wb = openpyxl.load_workbook(data_path, data_only=False)
-
             # Get the active sheet
             sheet = wb.active
-
             # Get the values from column A
-            column_values = [sheet[f'D{i}'].value for i in range(1, sheet.max_row + 1)]
+            # column_values = [sheet[f'D{i}'].value for i in range(1, sheet.max_row + 1)]
             df = pd.read_excel(data_path, header=0, index_col=0, engine='openpyxl')
             LSL = df['LSL']
             USL = df['USL']
-            avg_lst = df['AVG']
             for i, row in df.iterrows():
                 select_arr_ith = np.array(row[4:94]).reshape(10, 9)
                 grr_lst.append(self.grr_calculation(select_arr_ith, USL[i], LSL[i]))
@@ -104,34 +101,24 @@ class Digest_utils:
         data_path, grr_lst, avg_weigh = args
         current_time = datetime.datetime.now()
         formatted_time = current_time.strftime(f'%H%M%S')
+        ft = Font(color="FF0000", bold=True)
         try:
             summary_path = os.path.join(self.pwd, "Summary")
             wb = openpyxl.load_workbook(data_path, data_only=False)
             # Get the active sheet
             sheet = wb.active
             grr_lst = [np.nan if val == 'NAN' else str(val) for val in grr_lst]
-            num_lst = [(str(i+1)) for i in range(sheet.max_row)]
             sheet.insert_cols(7)
-            rename_lst = ["GRR"] + num_lst
-
+            GRR_cell = sheet.cell(row=1, column=7, value="GRR")
+            GRR_cell.font = ft
             for row_num, value in enumerate(grr_lst, start=2):
                 sheet.cell(row=row_num, column=7, value=value)
-            # renaming the num of data column, while extra add GRR
-            for col_num, new_num in enumerate(rename_lst, start=1):
-                sheet.cell(row=1, column=col_num+6, value=new_num)
-            # Apply conditional formatting
             red_fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')
             for cell in sheet['G']:
                 cell_letter = cell.coordinate
                 if cell_letter != 'G1' and float(cell.value) > 30:
                     sheet.conditional_formatting.add(cell_letter, CellIsRule(operator='greaterThan', formula=['30'], fill=red_fill))
 
-            #  ------------- add GRR attribute -------------
-            # df_pack.index = df_pack.index[:2].tolist() + (df_pack.index[2:] + 1).tolist()
-            # df_pack.loc[2] = np.array(grr_lst)
-            # df_pack.insert(5, f'GRR{avg_weigh}', grr_lst)
-            # df_pack[f'GRR{avg_weigh}'] = ["222" for i in range(35)]
-            # df_pack = df_pack.sort_index()
             summary_file_path = os.path.join(summary_path, f'GRR_avg{avg_weigh}_{formatted_time}.xlsx')
             wb.save(summary_file_path)
             # df_pack.to_excel(summary_file_path, engine='xlsxwriter')
@@ -744,59 +731,87 @@ class Digest_utils:
         :return:
         """
         global testItem_lst
-        # file_path = "C:\\Users\\23002496\\PycharmProjects\\DigestATSuite\\IMQX.csv"
         keyword1 = "SPEC:"
         keyword2 = "Value:"
-        pattern = r"~"
         all_lst = []
+        # all_array = np.empty((0, 2))
         data_lst = []
-        # testItem_lst = []
         countTestItems = df_info[1]  # 5810
+        a = 0  # compensate for test item not run
         try:
-            # self.Open_log_txt()
             with open(file_path, mode='r', encoding='utf-16', errors='ignore') as file:
                 lines = file.readlines()
-                for line in lines:
-                    if "TestWarning" in line or "EngMode" in line:
-                        raise Exception("engineering mode, invalid parsing")
+                for ith, line in enumerate(lines, start=1):
+                    if "TestWarning" in line or "EngMode" in line or "RetryTimes" in line:
+                        continue  # raise Exception("engineering mode, invalid parsing")
                     # Find the indices of the keywords in the line
                     index1 = line.find(keyword1)
                     index2 = line.find(keyword2)
-                    if len(data_lst) < countTestItems:                         # try to debug this part
-                        if index1 != -1 and index2 != -1:
-                            testItem_values = line[index2 + len(keyword2):].strip()
+                    TestItem_nth = (ith + a) % countTestItems
+                    test_item_name = line[:index1].strip(' ').split(' ')[-1]
+                    testItem_values = line[index2 + len(keyword2):].strip()
+                    if ith > countTestItems:
+                        if test_item_name == testItem_lst[TestItem_nth - 1]:
                             data_lst.append(testItem_values)
-                    else:
-                        # if index1 != -1 and index2 != -1:
-                        #     testItem_values = line[index2 + len(keyword2):].strip()
-                        #     data_lst.append(testItem_values)
-                        all_lst.append(data_lst)
-                        testItem_values = line[index2 + len(keyword2):].strip()
-                        data_lst = []
-                        data_lst.append(testItem_values)
-                self.pack_result(all_lst, LSL_lst, USL_lst, testItem_lst, result_fileName)
-            file.close()
 
+                        elif test_item_name != testItem_lst[TestItem_nth - 1]:
+                            a = testItem_lst.index(test_item_name)
+                            data_lst = data_lst + [np.nan] * a
+                            a = a - 1
+
+                    #     if test_item_name != testItem_lst[TestItem_nth - 1]:
+                    #         if test_item_name not in testItem_lst:
+                    #             print("NG$$$$test_item_leaking")
+                    #         else:
+                    #
+                    #             testItem_values = [np.nan] * 11
+                    #
+                    # data_lst.append(testItem_values)
+                    if len(data_lst) == len(testItem_lst):
+                        if all(np.isnan(x) for x in np.array(data_lst).astype(float) if isinstance(x, (int, float))):
+                            raise Exception("all values NAN")
+                        all_lst.append(data_lst)  # all_array = np.concatenate((all_array, np.array([data_lst])), axis=0)
+                        data_lst = []
+                    # --------------------------------------------------------------------
+                    # for i, testItem in enumerate(testItem_lst):
+                    #     testItem_values = None if testItem_lst[i] != test_item_name else testItem_values
+                    #     data_lst.append(testItem_values)
+                    #     if len(data_lst) == len(testItem_lst):
+                    #         all_lst.append(data_lst)
+                    #         break
+                    # if len(data_lst) < countTestItems:
+                    #     if index1 != -1 and index2 != -1:
+                    #         testItem_values = line[index2 + len(keyword2):].strip()
+                    #         data_lst.append(testItem_values)
+                    # else:
+                    #     all_lst.append(data_lst)
+                    #     testItem_values = line[index2 + len(keyword2):].strip()
+                    #     data_lst = []
+                    #     data_lst.append(testItem_values)
+                self.pack_result(all_lst, LSL_lst, USL_lst, testItem_lst, result_fileName)
         except Exception as e:
             raise "washing$NG >>> " + str(e.args)
+        finally:
+            file.close()
 
     def pack_result(self, result_list, LSL_lst, USL_lst, testItem_lst, result_fileName):
 
         try:
             df = pd.DataFrame(np.array(result_list))
-            # LSL_lst, USL_lst, testItem_lst = self.txt_rush()
-            df.index = (df.index[0:] + 2).tolist()
-            df.loc[0] = pd.Series(LSL_lst)  # insert SPEC
-            df.loc[1] = pd.Series(USL_lst)  # insert SPEC
-            df = df.sort_index()
+            # df.index = (df.index[0:] + 2).tolist()
+            # df.loc[0] = pd.Series(LSL_lst)  # insert SPEC
+            # df.loc[1] = pd.Series(USL_lst)  # insert SPEC
+            # df = df.sort_index()
             df.columns = pd.Series(testItem_lst)  # insert test item name
             df = df.T
-            df.insert(loc=2, column='AVG', value="")  # df['avg'] = ""
+            df.insert(loc=0, column='LSL', value=LSL_lst)
+            df.insert(loc=1, column='USL', value=USL_lst)
+            df.insert(loc=2, column='AVG', value="")
             df.insert(loc=3, column='STD', value="")
             df.insert(loc=4, column='CPK', value="")
-            df.rename(columns={0: 'LSL'}, inplace=True)
-            df.rename(columns={1: 'USL'}, inplace=True)
-            df.reset_index()
+            # df.rename(columns={0: 'LSL'}, inplace=True)
+            # df.rename(columns={1: 'USL'}, inplace=True)
+            # df.reset_index()
             writer = pd.ExcelWriter(f'{result_fileName}.xlsx', engine='xlsxwriter',
                                     engine_kwargs={'options': {'strings_to_numbers': True}})
             df.to_excel(writer, sheet_name='Sheet1')

@@ -1,7 +1,9 @@
-import csv
 # from openpyxl import load_workbook, Workbook
 # from openpyxl.utils.dataframe import dataframe_to_rows
-# from openpyxl.styles import PatternFill
+import openpyxl
+from openpyxl.styles import PatternFill
+from openpyxl.formatting.rule import CellIsRule
+
 import xlsxwriter
 from xlsxwriter.utility import xl_rowcol_to_cell, xl_col_to_name
 
@@ -14,8 +16,7 @@ class XlsxManager(object):
     def __init__(self):
         pass
 
-    def cooking_CPK(self, writer, shape):
-
+    def cooking_xCPK(self, writer, shape):
         try:
             # Get the xlsxwriter objects from the dataframe writer object.
             workbook = writer.book
@@ -52,6 +53,34 @@ class XlsxManager(object):
             workbook.close()
         except Exception as e:
             raise "cooking_CPK$NG >>> " + str(e.args)
+
+    # def grr_packingXlsx(self, *args):
+    #     data_path, grr_lst, avg_weigh = args
+    #     current_time = datetime.datetime.now()
+    #     formatted_time = current_time.strftime(f'%H%M%S')
+    #
+    #     try:
+    #         summary_path = os.path.join(self.pwd, "Summary")
+    #         wb = openpyxl.load_workbook(data_path, data_only=False)
+    #         # Get the active sheet
+    #         sheet = wb.active
+    #         grr_lst = [np.nan if val == 'NAN' else str(val) for val in grr_lst]
+    #         # num_lst = [(str(i + 1)) for i in range(sheet.max_row)]
+    #         sheet.insert_cols(7)
+    #         sheet.cell(row=1, column=7, value="GRR")
+    #         for row_num, value in enumerate(grr_lst, start=2):
+    #             sheet.cell(row=row_num, column=7, value=value)
+    #         red_fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')
+    #         for cell in sheet['G']:
+    #             cell_letter = cell.coordinate
+    #             if cell_letter != 'G1' and float(cell.value) > 30:
+    #                 sheet.conditional_formatting.add(cell_letter, CellIsRule(operator='greaterThan', formula=['30'], fill=red_fill))
+    #
+    #         summary_file_path = os.path.join(summary_path, f'GRR_avg{avg_weigh}_{formatted_time}.xlsx')
+    #         wb.save(summary_file_path)
+    #         # df_pack.to_excel(summary_file_path, engine='xlsxwriter')
+    #     except Exception as e:
+    #         raise "grr_packing NG >>>" + str(e.args)
 
     # def Openpyxl_cooking_CPK(self, df):
     #
