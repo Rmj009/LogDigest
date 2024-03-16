@@ -81,9 +81,9 @@ class Digest_utils:
         grr_lst = []
         try:
             # Load the workbook
-            wb = openpyxl.load_workbook(data_path, data_only=False)
+            # wb = openpyxl.load_workbook(data_path, data_only=False)
             # Get the active sheet
-            sheet = wb.active
+            # sheet = wb.active
             # Get the values from column A
             # column_values = [sheet[f'D{i}'].value for i in range(1, sheet.max_row + 1)]
             df = pd.read_excel(data_path, header=0, index_col=0, engine='openpyxl')
@@ -103,7 +103,6 @@ class Digest_utils:
         formatted_time = current_time.strftime(f'%H%M%S')
         ft = Font(color="FF0000", bold=True)
         try:
-            summary_path = os.path.join(self.pwd, "Summary")
             wb = openpyxl.load_workbook(data_path, data_only=False)
             # Get the active sheet
             sheet = wb.active
@@ -119,8 +118,8 @@ class Digest_utils:
                 if cell_letter != 'G1' and float(cell.value) > 30:
                     sheet.conditional_formatting.add(cell_letter, CellIsRule(operator='greaterThan', formula=['30'], fill=red_fill))
 
-            summary_file_path = os.path.join(summary_path, f'GRR_avg{avg_weigh}_{formatted_time}.xlsx')
-            wb.save(summary_file_path)
+            result_file_path = os.path.join(os.path.join(self.pwd, "Result"), f'Result_avg{avg_weigh}_{formatted_time}.xlsx')
+            wb.save(result_file_path)
             # df_pack.to_excel(summary_file_path, engine='xlsxwriter')
         except Exception as e:
             raise "grr_packing NG >>>" + str(e.args)
@@ -183,15 +182,14 @@ class Digest_utils:
         """
         # arr_lst = []
         mockup_col_name = []
-        nest_lst = []
         try:
             df = pd.read_csv(f'{csv_path}', header=0, index_col=0)
             mockup_col_name = df.columns[1:-1]
             df_values = df.iloc[2: df.shape[0], 1: df.shape[1] - 1]  # all values
             for w in range(weighted):
                 nest_lst = []
-                for col in range(df_values.shape[
-                                     1]):  # for row in range(loop_row):  # dut_test_times per dut = 9     loop_row = df.shape[0] - 3
+                # for row in range(loop_row):  # dut_test_times per dut = 9     loop_row = df.shape[0] - 3
+                for col in range(df_values.shape[1]):
                     arr_weight = df_values.iloc[:, col].rolling(w + 2, min_periods=w + 1, center=True).mean().values
                     # nest_lst.append(arr_weight)
                     nest_lst.append(arr_weight)
@@ -199,8 +197,8 @@ class Digest_utils:
                 csv_path_ = os.path.join(csv_data_path, csv_file_name)
                 # flat_lst = [item for sublist in arr_lst for item in sublist]
                 flat_lst = [arr for arr in nest_lst]
-                df_result = pd.concat([pd.DataFrame(arr) for arr in flat_lst],
-                                      axis=1)  # df_result = pd.merge([pd.DataFrame(arr) for arr in flat_lst], on='left')
+                df_result = pd.concat([pd.DataFrame(arr) for arr in flat_lst], axis=1)
+                # df_result = pd.merge([pd.DataFrame(arr) for arr in flat_lst], on='left')
                 df_result.columns = mockup_col_name
                 df_result.to_csv(csv_path_, index=False)
             # print(f'Sheet "{sheet_name}" saved as "{csv_file_name}"')
@@ -217,21 +215,56 @@ class Digest_utils:
             raise "xlsx file NG >>>" + str(e.args)
 
     def digest_xlsx(self, *args):
-        source_path, csv_data_path = args
+        result_path, avg_weigh = args
+        current_time = datetime.datetime.now()
+        formatted_time = current_time.strftime(f'%H%M%S')
+        # suppose result_xlsx no GRR
         try:
-            # Read all sheets from the Excel file
-            xls = pd.ExcelFile(source_path)
-            sheet_names = xls.sheet_names
-            # Iterate over each sheet and save it as a CSV file
-            for idx, sheet_name in enumerate(sheet_names):
-                df = pd.read_excel(xls, sheet_name)
-                csv_file_name = f'GRR{idx + 1}.csv'
-                csv_path_ = os.path.join(csv_data_path, csv_file_name)
-                df = df.sort_index()
-                df.to_csv(csv_path_, index=False)
-                print(f'Sheet "{sheet_name}" saved as "{csv_file_name}"')
+            files = os.listdir(result_path[0])
+            # Sort the files based on modification time (newest first)
+            files.sort(key=lambda x: os.path.getmtime(os.path.join(result_path[0], x)), reverse=True)
+            result_xlsx_filename = os.path.join(result_path[0], files[0])
+            xls = pd.ExcelFile(result_xlsx_filename, engine='openpyxl')
+            sheet_name = xls.sheet_names  # barely one sheet literally
+            df = pd.read_excel(xls, sheet_name[0])
+            for weigh in range(2, avg_weigh - 1):
+                self.grr_weigh_pack(xls, df, weigh)
+            # mockup_col_name = df.columns[1:-1]
+            # for w, row in df.iterrows():
+            #     # wq = abs(hash(w))
+            #     yy = row[6: df.shape[1]]
+            #     select_arr_ith = row[6: df.shape[1]].rolling(2, min_periods=wq, center=True).mean().values
+            #     select_arr_ith[0] = np.mean(yy[0] + yy[-avg_weigh:])
+            #     # select_arr_ith[-window // 2:] = select_arr_ith[-window // 2]
+            #     # select_arr_ith[:window // 2] = select_arr_ith[window // 2]
+            #     result_file_path = os.path.join(os.path.join(self.pwd, "Result"), f'Result_avg{wq}_{formatted_time}.xlsx')
+            # wb.save(result_file_path)
         except Exception as e:
             raise "xlsx file NG >>>" + str(e.args)
+
+    def grr_weigh_pack(self, *args):
+        current_time = datetime.datetime.now()
+        formatted_time = current_time.strftime(f'%H%M%S')
+        output_dir = os.path.join(self.pwd, "Result")
+
+        try:
+            writer, df, avg_weigh = args
+            result_arr = []
+            # mockup_col_name = df.columns[1:-1]
+            for i, row in df.iterrows():
+                yy = row[6: df.shape[1]]
+                indices = [i for i in range(0, -avg_weigh, -1)]
+                select_arr_ith = row[6: df.shape[1]].rolling(avg_weigh, min_periods=avg_weigh, center=True).mean().values
+                select_arr_ith[0] = sum(yy[i] for i in indices) / len(indices)
+                result_arr.append(select_arr_ith)
+            # result_file_path = os.path.join(output_dir, f'Result_avg{avg_weigh}_{formatted_time}.xlsx')
+            df_weigh = pd.DataFrame(result_arr)
+            df_result = self.xlsxInstance.df_constructor(df, df_weigh)
+
+            df_result.to_excel(writer, sheet_name=f'GRR_w{avg_weigh}', index=False)
+
+        except Exception as e:
+            raise "grr_weigh_pack$NG >>> " + str(e.args)
 
     def grr_summary(self, *args):
         arr_result = []
@@ -738,6 +771,8 @@ class Digest_utils:
         data_lst = []
         countTestItems = df_info[1]  # 5810
         a = 0  # compensate for test item not run
+        num_lost_lines = 0
+        stack_testItem_lst = testItem_lst.copy()
         try:
             with open(file_path, mode='r', encoding='utf-16', errors='ignore') as file:
                 lines = file.readlines()
@@ -747,31 +782,47 @@ class Digest_utils:
                     # Find the indices of the keywords in the line
                     index1 = line.find(keyword1)
                     index2 = line.find(keyword2)
-                    TestItem_nth = (ith + a) % countTestItems
+                    # num_lost_lines += num_lost_lines
+                    TestItem_nth = (ith + num_lost_lines) % countTestItems
                     test_item_name = line[:index1].strip(' ').split(' ')[-1]
                     testItem_values = line[index2 + len(keyword2):].strip()
-                    if ith > countTestItems:
-                        if test_item_name == testItem_lst[TestItem_nth - 1]:
-                            data_lst.append(testItem_values)
-
-                        elif test_item_name != testItem_lst[TestItem_nth - 1]:
-                            a = testItem_lst.index(test_item_name)
-                            data_lst = data_lst + [np.nan] * a
-                            a = a - 1
-
-                    #     if test_item_name != testItem_lst[TestItem_nth - 1]:
-                    #         if test_item_name not in testItem_lst:
-                    #             print("NG$$$$test_item_leaking")
-                    #         else:
+                    # add datalst after checking data value reference to testItem,
+                    if test_item_name != testItem_lst[TestItem_nth - 1]:
+                        last_TI_index = testItem_lst.index(testItem_lst[-1])
+                        if test_item_name not in testItem_lst:
+                            raise Exception("NG$$$$test_item_leaking")
+                        elif test_item_name == testItem_lst[TestItem_nth - 2] and test_item_name != testItem_lst[0]:
+                            print("--- testItem retry mechanism ---")
+                            num_lost_lines -= 1
+                        else:
+                            if test_item_name == testItem_lst[-1]:
+                                print("--- reach last testItem ---")
+                                num_lost_lines = countTestItems - len(data_lst)
+                                data_lst = data_lst + [np.nan] * num_lost_lines
+                            elif test_item_name not in stack_testItem_lst:
+                                print("--- might be big retry involved ---")
+                                num_lost_lines -= 1
+                            elif test_item_name in stack_testItem_lst:
+                                print("--- testItem skip bcoz test failed ---")
+                                print("--- testItem NG, goto next round")
+                                num_lost_lines = testItem_lst.index(test_item_name)
+                                data_lst = data_lst + [np.nan] * num_lost_lines
+                    else:
+                        stack_testItem_lst.pop(0)
+                        data_lst.append(testItem_values)
+                    # if test_item_name not in testItem_lst[TestItem_nth - 1]:
+                    #     data_lst.append(testItem_values)
                     #
-                    #             testItem_values = [np.nan] * 11
-                    #
-                    # data_lst.append(testItem_values)
-                    if len(data_lst) == len(testItem_lst):
+                    # elif test_item_name != testItem_lst[TestItem_nth - 1]:
+                    #     a = testItem_lst.index(test_item_name)
+                    #     data_lst = data_lst + [np.nan] * a
+                    #     a = a - 1
+                    if len(data_lst) == len(testItem_lst):  # slicing data values into groups
                         if all(np.isnan(x) for x in np.array(data_lst).astype(float) if isinstance(x, (int, float))):
                             raise Exception("all values NAN")
                         all_lst.append(data_lst)  # all_array = np.concatenate((all_array, np.array([data_lst])), axis=0)
                         data_lst = []
+                        stack_testItem_lst = testItem_lst.copy()
                     # --------------------------------------------------------------------
                     # for i, testItem in enumerate(testItem_lst):
                     #     testItem_values = None if testItem_lst[i] != test_item_name else testItem_values
