@@ -220,15 +220,24 @@ class Digest_utils:
         formatted_time = current_time.strftime(f'%H%M%S')
         # suppose result_xlsx no GRR
         try:
-            files = os.listdir(result_path[0])
-            # Sort the files based on modification time (newest first)
-            files.sort(key=lambda x: os.path.getmtime(os.path.join(result_path[0], x)), reverse=True)
-            result_xlsx_filename = os.path.join(result_path[0], files[0])
-            xls = pd.ExcelFile(result_xlsx_filename, engine='openpyxl')
-            sheet_name = xls.sheet_names  # barely one sheet literally
-            df = pd.read_excel(xls, sheet_name[0])
-            for weigh in range(2, avg_weigh - 1):
-                self.grr_weigh_pack(xls, df, weigh)
+            # files = os.listdir(result_path[0])
+            # # Sort the files based on modification time (newest first)
+            # files.sort(key=lambda x: os.path.getmtime(os.path.join(result_path[0], x)), reverse=True)
+            # result_xlsx_filename = os.path.join(result_path[0], files[0])
+            # xls = pd.ExcelFile(result_path, engine='openpyxl')  # "Weighed_result.xlsx"
+            xls = pd.ExcelWriter("hi____.xlsx", engine='xlsxwriter')  # "Weighed_result.xlsx"
+
+            # sheet_name = xls.sheet_names  # barely one sheet literally
+            # df = pd.read_excel(xls, sheet_name=xls.sheet_names[0])
+            df = pd.read_excel(result_path, index_col=0, header=0, engine='openpyxl')
+            # for weigh in range(2, avg_weigh - 1):
+            #     self.grr_weigh_pack(xls, df, weigh)
+
+            df.to_excel(xls, sheet_name='Sheet')
+            for s_name in range(2, 6):
+                new_excel_filename = f'GRR{s_name}'
+                self.xlsxInstance.clone_by_weigh(writer=xls, shape=df.shape, sheet_namaiwa='Sheet', new_excel_filename=new_excel_filename, weigh=s_name)
+            xls.close()
             # mockup_col_name = df.columns[1:-1]
             # for w, row in df.iterrows():
             #     # wq = abs(hash(w))

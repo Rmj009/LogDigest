@@ -16,6 +16,34 @@ class XlsxManager(object):
     def __init__(self):
         pass
 
+    def clone_by_weigh(self, writer, shape, sheet_namaiwa, new_excel_filename, weigh):
+        try:
+            # Get the xlsxwriter objects from the dataframe writer object.
+            workbook = writer.book
+            worksheet = sheet_namaiwa
+            # workbook_clone = xlsxwriter.Workbook(f'{new_excel_filename}')
+            workbook_clone = workbook.add_worksheet(new_excel_filename)
+            # Set a formula for each cell in the row
+            df_row_num = shape[0]  # Row number
+            df_col_num = shape[1]  # Col number
+            start_col = 7  # Start column number (after the inserted column)
+            end_col = df_col_num  # End column number (for example)
+            # format1 = workbook.add_format({"bg_color": "#FFC7CE", "font_color": "#9C0006"})
+            for row in range(2, df_row_num + 2):
+                for col_num in range(start_col, end_col):
+                    col_alphabet_head = xl_col_to_name(col_num)  # start from H2
+                    col_alphabet_tail = xl_col_to_name(col_num + weigh - 1)  # start from H2
+                    formula = f'=IFERROR({sheet_namaiwa}!AVERAGE({col_alphabet_head}{row}:{col_alphabet_tail}{row}), "N/A")'
+                    workbook_clone.write_formula(f'{col_alphabet_head}{row}', formula)
+
+            # Close the workbook
+            # Saving the modified Excel file in default (that is Excel 2003) format
+            # Write a conditional format over a range.
+            # worksheet.conditional_format(f'F1:F{df_row_num}', {"type": "cell", "criteria": "<", "value": 1.33, "format": format1})
+            # workbook.close()
+        except Exception as e:
+            raise "cooking_CPK$NG >>> " + str(e.args)
+
     def cooking_xCPK(self, writer, shape):
         try:
             # Get the xlsxwriter objects from the dataframe writer object.
@@ -53,6 +81,12 @@ class XlsxManager(object):
             workbook.close()
         except Exception as e:
             raise "cooking_CPK$NG >>> " + str(e.args)
+
+    def df_constructor(self, df, df_weigh):
+        try:
+            pass
+        except Exception as e:
+            raise ""
 
     # def grr_packingXlsx(self, *args):
     #     data_path, grr_lst, avg_weigh = args

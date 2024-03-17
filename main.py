@@ -33,7 +33,7 @@ class StartPage(object):
         self.btnSummaryGRR = tk.Button(self.frame, text="GRR Summary", command=lambda: self.summary_grr())
         self.btnConcludeGRR = tk.Button(self.frame, text="GRR Conclusion", command=lambda: self.final_grr())
         self.btnGrrCalc = tk.Button(self.frame, text="GRR Calculation",
-                                    command=lambda: None)  # self.chooseFile()
+                                    command=lambda: self.cccccc())  # self.chooseFile()
 
         # Combobox creation
         n = tk.StringVar(self.frame, "1")
@@ -192,8 +192,7 @@ class StartPage(object):
         try:
             if not os.path.exists(self.Data_logs):
                 os.mkdir(self.Data_logs)
-            if logPath := filedialog.askopenfilename(title='Select Files',
-                                                     filetypes=[('Text files', '*.txt'), ('All files', '*.*')]):
+            if logPath := filedialog.askopenfilename(title='Select Files', filetypes=[('Text files', '*.txt'), ('All files', '*.*')]):
                 # os.path.isfile(logPath)
                 overall_txt_ = [f for f in logPath]
                 # self.info_manager.start_info_manager_thread()
@@ -223,6 +222,14 @@ class StartPage(object):
             messagebox.showerror("FILE_ERR", "Invalid data log or EngMode data, Plz reload file")
             raise "log file NG >>> " + str(e.args)
         return True
+
+    def cccccc(self):
+        try:
+            logPath = os.path.join(self.path, "highlighted_values.xlsx")
+            # if logPath := filedialog.askopenfilename(title='Select Files', filetypes=[('Xlsx files', '*.xlsx'), ('All files', '*.*')]):
+            self.util_obj.digest_xlsx(logPath, 2)
+        except Exception as e:
+            raise "" + str(e.args)
 
     def open_grr_file(self):
         try:
