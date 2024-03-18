@@ -16,13 +16,12 @@ class XlsxManager(object):
     def __init__(self):
         pass
 
-    def clone_by_weigh(self, writer, shape, sheet_namaiwa, new_excel_filename, weigh):
+    def clone_by_weigh(self, workbook_clone, shape, sheet_namaiwa, new_excel_filename, weigh):
         try:
             # Get the xlsxwriter objects from the dataframe writer object.
-            workbook = writer.book
-            worksheet = sheet_namaiwa
+            # workbook = writer.book
             # workbook_clone = xlsxwriter.Workbook(f'{new_excel_filename}')
-            workbook_clone = workbook.add_worksheet(new_excel_filename)
+            # workbook_clone = workbook.add_worksheet(new_excel_filename)
             # Set a formula for each cell in the row
             df_row_num = shape[0]  # Row number
             df_col_num = shape[1]  # Col number
@@ -30,10 +29,12 @@ class XlsxManager(object):
             end_col = df_col_num  # End column number (for example)
             # format1 = workbook.add_format({"bg_color": "#FFC7CE", "font_color": "#9C0006"})
             # --------- complement LSL, USL, AVG, STD, CPK, cols ---------
-            for r, row in enumerate(writer.values):
-                for c, values in enumerate(row[:8]):  # until GGR columns
-                    workbook_clone.write(r, c, values)
-
+            # for r, row in enumerate(writer.values):
+            #     for c, values in enumerate(row[:8]):  # until GGR columns
+            #         workbook_clone.write(r, c, values)
+            # Get the dimensions of the source worksheet
+            # max_row = workbook_clone.dim_rowmax + 1
+            # max_col = workbook_clone.dim_colmax + 1
             # --------- clone weigh data to other sheets ---------
             for row in range(2, df_row_num + 2):
                 for col_num in range(start_col, end_col):
@@ -44,22 +45,12 @@ class XlsxManager(object):
             # --------- overlap the calculation misplace part ---------
             for row in range(2, df_row_num + 2):
                 for col_num in range(0, weigh - 1):
-                    col_alphabet_head = xl_col_to_name(col_num)  # start from H2
-                    col_alphabet_tail0 = xl_col_to_name(end_col - weigh + 2 + col_num)  # start from H2
-                    col_alphabet_tail_end = xl_col_to_name(end_col)  # start from H2
-                    formula = f'=AVERAGE({sheet_namaiwa}!{col_alphabet_head}{row}, {sheet_namaiwa}!{col_alphabet_tail0}{row}:{col_alphabet_tail_end}{row})'
-                    # workbook_clone.write_formula(f'{col_alphabet_tail0}{row}', formula)
-                    if weigh == 2:
-                        workbook_clone.write_formula(f'{col_alphabet_tail0}{row}', formula)
-                        # workbook_clone.write_formula(f'{col_alphabet_tail_end}{end_col}', formula)
-                    elif weigh == 3:
-                        # workbook_clone.write_formula(f'{col_alphabet_tail_end}{df_col_num - weigh}', formula)
-                        workbook_clone.write_formula(f'{col_alphabet_tail0}{row}', formula)
-                    elif weigh == 4:
-                        workbook_clone.write_formula(f'{col_alphabet_tail0}{row}', formula)
-                    elif weigh == 5:
-                        workbook_clone.write_formula(f'{col_alphabet_tail0}{row}', formula)
-
+                        head0 = xl_col_to_name(col_num+7)
+                        head1 = xl_col_to_name(col_num+7+col_num)
+                        tail0 = xl_col_to_name(end_col - weigh + 2 + col_num)  # start from H2
+                        tail1 = xl_col_to_name(end_col)  # start from H2
+                        formula = f'=AVERAGE({sheet_namaiwa}!{head0}{row}:{head1}{row}, {sheet_namaiwa}!{tail0}{row}:{tail1}{row})'
+                        workbook_clone.write_formula(f'{tail0}{row}', formula)
 
             # Close the workbook at end of weigh loop
             # worksheet.conditional_format(f'F1:F{df_row_num}', {"type": "cell", "criteria": "<", "value": 1.33, "format": format1})

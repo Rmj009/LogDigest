@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['main.py','my_utils.py','Gage.py','info_Manager.py'],
+    ['main.py','my_utils.py','Gage.py','DelightXlsx.py','info_Manager.py'],
     pathex=['C:\\Users\\23002496\\PycharmProjects\\pythonProject'],
     binaries=[],
     datas=[],

@@ -5,6 +5,7 @@ import datetime
 import numpy as np
 import pandas as pd
 import openpyxl
+import xlsxwriter
 from openpyxl.styles import Font, PatternFill
 from openpyxl.formatting.rule import CellIsRule
 from DelightXlsx import XlsxManager
@@ -215,28 +216,38 @@ class Digest_utils:
             raise "xlsx file NG >>>" + str(e.args)
 
     def digest_xlsx(self, *args):
-        result_path, avg_weigh = args
+        result_path = args
         current_time = datetime.datetime.now()
         formatted_time = current_time.strftime(f'%H%M%S')
         # suppose result_xlsx no GRR
         try:
-            # files = os.listdir(result_path[0])
-            # # Sort the files based on modification time (newest first)
-            # files.sort(key=lambda x: os.path.getmtime(os.path.join(result_path[0], x)), reverse=True)
-            # result_xlsx_filename = os.path.join(result_path[0], files[0])
-            # xls = pd.ExcelFile(result_path, engine='openpyxl')  # "Weighed_result.xlsx"
-            xls = pd.ExcelWriter("hi____.xlsx", engine='xlsxwriter')  # "Weighed_result.xlsx"
+            files = os.listdir(result_path[0])
+            # Sort the files based on modification time (newest first)
+            files.sort(key=lambda x: os.path.getmtime(os.path.join(result_path[0], x)), reverse=True)
+            result_xlsx_filename = os.path.join(result_path[0], files[0])
+            # xls = pd.ExcelFile(result_xlsx_filename, engine='openpyxl')  # "Weighed_result.xlsx"
+            xls = pd.ExcelWriter("hi___2.xlsx", engine='xlsxwriter')  # "Weighed_result.xlsx"
 
             # sheet_name = xls.sheet_names  # barely one sheet literally
             # df = pd.read_excel(xls, sheet_name=xls.sheet_names[0])
-            df = pd.read_excel(result_path, index_col=0, header=0, engine='openpyxl')
+            df = pd.read_excel(result_xlsx_filename, index_col=0, header=0, engine='openpyxl')
+            # workbook = xlsxwriter.Workbook(result_xlsx_filename)
             # for weigh in range(2, avg_weigh - 1):
             #     self.grr_weigh_pack(xls, df, weigh)
-
+            workbook = xls.book
             df.to_excel(xls, sheet_name='Sheet')
             for s_name in range(2, 6):
                 new_excel_filename = f'GRR{s_name}'
-                self.xlsxInstance.clone_by_weigh(writer=xls, shape=df.shape, sheet_namaiwa='Sheet', new_excel_filename=new_excel_filename, weigh=s_name)
+                # Copy all values from the source worksheet to the destination worksheet
+                workbook_clone = workbook.add_worksheet(new_excel_filename)
+                for r, row in enumerate(df.iterrows(), start=1):
+                    for c, value in enumerate(row[1], start=1):
+                        if pd.isnull(value) or np.isinf(value):
+                            value = None  # Replace NaN/Inf with None
+                        else:
+                            workbook_clone.write(r, c, value)
+                # workbook_clone = workbook.add_worksheet(new_excel_filename)
+                self.xlsxInstance.clone_by_weigh(workbook_clone=workbook_clone, shape=df.shape, sheet_namaiwa='Sheet', new_excel_filename=new_excel_filename, weigh=s_name)
             xls.close()
             # mockup_col_name = df.columns[1:-1]
             # for w, row in df.iterrows():

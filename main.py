@@ -47,7 +47,7 @@ class StartPage(object):
         # self.combo.bind("<<ComboboxSelected>>", self.handle_selection(event=self.btnGrrCalc.config(state=tk.ACTIVE)))
         # self.combo.set("GRR1")
         # self.combo.place(x=5, y=5)
-        self.btnOpen.grid(row=1, column=0, padx=10, pady=10, rowspan=True)
+        # self.btnOpen.grid(row=1, column=0, padx=10, pady=10, rowspan=True)
         self.btnOpenLog.grid(row=2, column=0, padx=10, pady=10, rowspan=True, columnspan=3)
         # self.combo.pack(side='top', padx=5, pady=5, anchor="w")
         # tk.Label(self.frame, text="What is your favorite car barnd?").grid(row=0, column=0, columnspan=3, pady=10, padx=10)
