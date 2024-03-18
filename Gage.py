@@ -105,6 +105,8 @@ class Gage:
         RR_B = []
         RR_C = []
         try:
+            if self.range_spec == 0:
+                raise Exception("spec_range_is_0")
             arr_3d = np.array(self.data)
             grr_shape0 = arr_3d.shape[0]
             grr_shape1 = arr_3d.shape[1]
@@ -192,13 +194,11 @@ class Gage:
             # print("F2_t2: ", F2_t2)
             # print("p_value1_t2: ", p_value1_t2)
             # print("p_value2_t2: ", p_value2_t2)
-            # print('-----------------------------------------')
             # -------------- GRR_Variance --------------
             grr_tolerance = self.grr_variance(self.range_spec, grr_shape1, grr_shape2,
                                               MS_0, MS_1, MS_2, MS_3, MS_0_t2, MS_1_t2, MS_2_t2, p_value1, p_value3, F3)
 
         except RuntimeWarning as ex:
-            # raise "divide failure => " + str(ex.args)
             print(f"RuntimeWarning$NG >>> " + str(ex.args))
             return np.nan
         except Exception as ex:
