@@ -86,7 +86,7 @@ class Digest_utils:
             # sheet = wb.active
             # Get the values from column A
             # column_values = [sheet[f'D{i}'].value for i in range(1, sheet.max_row + 1)]
-            df = pd.read_excel(data_path, header=0, index_col=0, engine='openpyxl')
+            df = pd.read_excel(data_path, header=0, index_col=0, sheet_names=avg_weigh, engine='openpyxl')
             LSL = df['LSL']
             USL = df['USL']
             for i, row in df.iterrows():

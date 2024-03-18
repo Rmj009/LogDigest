@@ -17,6 +17,8 @@ class StartPage(object):
         self.windows = []
         self.GGR_option = 0
         self.font = ('Times New Roman', 9, "bold")
+        self.path = os.path.dirname(os.path.abspath('__file__'))
+        # master.iconbitmap(os.path.join(self.path, "_wnc.ico"))
         self.frame = tk.Frame(master, bg='gray66', width=100, height=160)
         self.frame.grid(row=0, column=0, padx=10, pady=5)
         self.txt = tk.Text(master, font=self.font, width=200, height=150, wrap=tk.WORD)
@@ -33,7 +35,7 @@ class StartPage(object):
         self.btnSummaryGRR = tk.Button(self.frame, text="GRR Summary", command=lambda: self.summary_grr())
         self.btnConcludeGRR = tk.Button(self.frame, text="GRR Conclusion", command=lambda: self.final_grr())
         self.btnGrrCalc = tk.Button(self.frame, text="GRR Calculation",
-                                    command=lambda: self.cccccc())  # self.chooseFile()
+                                    command=lambda: self.calc_grr(avg_weigh=[3, 4, 5]))  # self.chooseFile()
 
         # Combobox creation
         n = tk.StringVar(self.frame, "1")
@@ -50,8 +52,7 @@ class StartPage(object):
         # self.combo.pack(side='top', padx=5, pady=5, anchor="w")
         # tk.Label(self.frame, text="What is your favorite car barnd?").grid(row=0, column=0, columnspan=3, pady=10, padx=10)
         # for (text, value) in values.items():
-        tk.Radiobutton(self.frame, text="Y", variable=n, value=0).grid(row=3, column=0, padx=10, pady=10, rowspan=1)
-        tk.Radiobutton(self.frame, text="N", variable=n, value=1).grid(row=4, column=0, padx=10, pady=10, rowspan=1)
+        tk.Checkbutton(self.frame, text="weight GGR1~GRR5", command=lambda: self.Clone_Weight_Data()).grid(row=3, column=0, padx=10, pady=10, rowspan=1)
 
         self.btnGrrCalc.grid(row=5, column=0, padx=10, pady=10, rowspan=True)
         # self.btnSummaryGRR.pack(side='top', padx=10, pady=5, anchor="w")
@@ -98,7 +99,7 @@ class StartPage(object):
         # self.txt_widget = scrolledtext.ScrolledText(self.frameTxt, font=self.font, wrap=tk.WORD)
         # self.txt_widget.pack(expand=True, fill='both')
 
-        self.path = os.path.dirname(os.path.abspath('__file__'))
+
         self.create_dataDir()
         # self.show_frame(StartPage)
 
@@ -110,7 +111,7 @@ class StartPage(object):
         self.grr_spec = None
         self.info_manager = InfoManager(self.txt)
         self.util_obj = Digest_utils(self.path)
-        self.summary_path = os.path.join(self.path, "Result")
+        self.result_path = os.path.join(self.path, "Result")
         self.Data_logs = os.path.join(self.path, "DataLog")
 
         # button1 = tk.Button(self, text="Go to Page One",
@@ -134,53 +135,62 @@ class StartPage(object):
 
     def final_grr(self):
         try:
-            self.util_obj.grr_selection(self.summary_path)
-            self.info_manager.update_info("GRR Conclusion", f'{self.summary_path}')
+            self.util_obj.grr_selection(self.result_path)
+            self.info_manager.update_info("GRR Conclusion", f'{self.result_path}')
         except Exception as e:
             messagebox.showerror("Conclude GRR NG", "Plz make sure index at last column and retry")
             raise "summary_grr NG >>> " + str(e.args)
 
     def summary_grr(self):
         try:
-            self.util_obj.grr_summary(self.summary_path)
-            self.info_manager.update_info("GRR Summary", f'{self.summary_path}')
+            self.util_obj.grr_summary(self.result_path)
+            self.info_manager.update_info("GRR Summary", f'{self.result_path}')
             self.btnConcludeGRR.config(state=tk.ACTIVE)
         except Exception as e:
             messagebox.showerror("Summary NG", "Plz retry")
             raise "summary_grr NG >>> " + str(e.args)
 
-    def calc_grr(self):
+    def calc_grr(self, avg_weigh):
         global origin_log_fileName
         try:
             # csv_ith = self.combo.get()[3]  # need debug
-            if not os.path.exists(self.summary_path):
-                os.mkdir(self.summary_path)
+            if not os.path.exists(self.result_path):
+                os.mkdir(self.result_path)
             else:
-                all_grr_csv = os.listdir(self.summary_path)
+                all_grr_csv = os.listdir(self.result_path)
                 for file in all_grr_csv:
                     if file.endswith(".csv"):
-                        file_path = os.path.join(self.summary_path, file)
+                        file_path = os.path.join(self.result_path, file)
                         os.remove(file_path)
                         print(f'remove csv >>>{file_path}')
             # data_path = os.path.join(self.Data_logs, f'trySample.xlsx')
             data_path = os.path.join(self.path, f'{origin_log_fileName}.xlsx')
-            self.util_obj.grr_roasting(data_path, 0)
-            """
-            GRR for multiple averaging
+            for w in range(3, avg_weigh):
+                threading.Thread(target=self.util_obj.grr_roasting(data_path, w))
 
-            csv_path_select = os.path.join(csv_data_path, f'{csv}')
-            grr_csv_ = os.listdir(csv_data_path)
-            for avg_weigh, csv in enumerate(grr_csv_):
-                self.util_obj.grr_cooking(self.path, csv_path_select, avg_weigh)
-            # =================================================================
-            """
             # for csv_ith, csv in enumerate(grr_csv_):
+            """
+            GRR for multiple averaging for vertical data display
+            """
+            # csv_path_select = os.path.join(csv_data_path, f'{csv}')
+            # grr_csv_ = os.listdir(csv_data_path)
+            # for avg_weigh, csv in enumerate(grr_csv_):
+            #     self.util_obj.grr_cooking(self.path, csv_path_select, avg_weigh)
             #     csv_path_select = os.path.join(csv_data_path, f'{csv}')
-
-            self.info_manager.update_info("Gage R&R Calculation", f'{self.summary_path}')
-            self.btnSummaryGRR.config(state=tk.ACTIVE)
+            #
+            # self.info_manager.update_info("Gage R&R Calculation", f'{self.result_path}')
+            # self.btnSummaryGRR.config(state=tk.ACTIVE)
         except Exception as e:
             raise "calculate GRR err >>> " + str(e.args)
+
+    def Clone_Weight_Data(self):
+        try:
+            self.util_obj.digest_xlsx(self.result_path)
+            self.info_manager.update_info("clone via weight", f'{self.result_path}')
+            self.btnConcludeGRR.config(state=tk.ACTIVE)
+        except Exception as e:
+            messagebox.showerror("Clone_Weight_Data$NG", "Plz retry")
+            raise "Clone_Weight_Data$NG >>> " + str(e.args)
 
     def open_log_txt(self):
         proj = "IMQX"
@@ -195,7 +205,7 @@ class StartPage(object):
             if logPath := filedialog.askopenfilename(title='Select Files', filetypes=[('Text files', '*.txt'), ('All files', '*.*')]):
                 # os.path.isfile(logPath)
                 overall_txt_ = [f for f in logPath]
-                # self.info_manager.start_info_manager_thread()
+                self.info_manager.start_info_manager_thread()
                 df_info = self.util_obj.Open_log_txt(logPath, os.path.join(self.Data_logs, projName_file))
                 files = os.listdir(self.Data_logs)
                 # Sort the files based on modification time (newest first)
@@ -207,7 +217,7 @@ class StartPage(object):
                                                   f'Test_Items: {df_info[1]}         Stress_times: {df_info[0]} '
                                                   f'\r\n  StressTest under 90,  cannot run GRR')
                 else:
-                    self.calc_grr()
+                    self.calc_grr(avg_weigh=0)
                     # self.btnGrrCalc.config(state=tk.ACTIVE)
                     self.info_manager.update_info("Open log",
                                                   f'Test_Items: {df_info[1]}         Stress_times: {df_info[0]}')
@@ -222,14 +232,6 @@ class StartPage(object):
             messagebox.showerror("FILE_ERR", "Invalid data log or EngMode data, Plz reload file")
             raise "log file NG >>> " + str(e.args)
         return True
-
-    def cccccc(self):
-        try:
-            logPath = os.path.join(self.path, "highlighted_values.xlsx")
-            # if logPath := filedialog.askopenfilename(title='Select Files', filetypes=[('Xlsx files', '*.xlsx'), ('All files', '*.*')]):
-            self.util_obj.digest_xlsx(logPath, 2)
-        except Exception as e:
-            raise "" + str(e.args)
 
     def open_grr_file(self):
         try:
