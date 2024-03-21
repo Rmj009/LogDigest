@@ -25,7 +25,7 @@ class XlsxManager(object):
             # Set a formula for each cell in the row
             df_row_num = shape[0]  # Row number
             df_col_num = shape[1]  # Col number
-            start_col = 7  # Start column number (after the inserted column)
+            start_col = 8  # bcoz full copy  # Start column number (after the inserted column)
             end_col = df_col_num  # End column number (for example)
             # format1 = workbook.add_format({"bg_color": "#FFC7CE", "font_color": "#9C0006"})
             # --------- complement LSL, USL, AVG, STD, CPK, cols ---------
@@ -36,17 +36,17 @@ class XlsxManager(object):
             # max_row = workbook_clone.dim_rowmax + 1
             # max_col = workbook_clone.dim_colmax + 1
             # --------- clone weigh data to other sheets ---------
-            for row in range(2, df_row_num + 2):
+            for row in range(3, df_row_num + 2):
                 for col_num in range(start_col, end_col):
                     col_alphabet_head = xl_col_to_name(col_num)  # start from H2
                     col_alphabet_tail = xl_col_to_name(col_num + weigh - 1)  # start from H2
                     formula = f'=IFERROR(AVERAGE({sheet_namaiwa}!{col_alphabet_head}{row}:{col_alphabet_tail}{row}), "N/A")'
                     workbook_clone.write_formula(f'{col_alphabet_head}{row}', formula)
             # --------- overlap the calculation misplace part ---------
-            for row in range(2, df_row_num + 2):
+            for row in range(3, df_row_num + 2):
                 for col_num in range(0, weigh - 1):
-                        head0 = xl_col_to_name(col_num+7)
-                        head1 = xl_col_to_name(col_num+7+col_num)
+                        head0 = xl_col_to_name(col_num+8)
+                        head1 = xl_col_to_name(col_num+8+col_num)
                         tail0 = xl_col_to_name(end_col - weigh + 2 + col_num)  # start from H2
                         tail1 = xl_col_to_name(end_col)  # start from H2
                         formula = f'=AVERAGE({sheet_namaiwa}!{head0}{row}:{head1}{row}, {sheet_namaiwa}!{tail0}{row}:{tail1}{row})'
@@ -56,7 +56,7 @@ class XlsxManager(object):
             # worksheet.conditional_format(f'F1:F{df_row_num}', {"type": "cell", "criteria": "<", "value": 1.33, "format": format1})
             # workbook.close()
         except Exception as e:
-            raise "cooking_CPK$NG >>> " + str(e.args)
+            raise "clone_by_weigh$NG >>> " + str(e.args)
 
     def cooking_xCPK(self, writer, shape):
         try:

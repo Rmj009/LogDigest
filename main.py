@@ -35,7 +35,7 @@ class StartPage(object):
         self.btnSummaryGRR = tk.Button(self.frame, text="GRR Summary", command=lambda: self.summary_grr())
         self.btnConcludeGRR = tk.Button(self.frame, text="GRR Conclusion", command=lambda: self.final_grr())
         self.btnGrrCalc = tk.Button(self.frame, text="GRR Calculation",
-                                    command=lambda: self.calc_grr(avg_weigh=[3, 4, 5]))  # self.chooseFile()
+                                    command=lambda: threading.Thread(target=self.calc_grr(avg_weigh=6)))  # self.chooseFile()
 
         # Combobox creation
         n = tk.StringVar(self.frame, "1")
@@ -52,7 +52,7 @@ class StartPage(object):
         # self.combo.pack(side='top', padx=5, pady=5, anchor="w")
         # tk.Label(self.frame, text="What is your favorite car barnd?").grid(row=0, column=0, columnspan=3, pady=10, padx=10)
         # for (text, value) in values.items():
-        tk.Checkbutton(self.frame, text="weight GGR1~GRR5", command=lambda: self.Clone_Weight_Data()).grid(row=3, column=0, padx=10, pady=10, rowspan=1)
+        tk.Checkbutton(self.frame, text="weight GGR1~GRR5", command=lambda: threading.Thread(target=self.Clone_Weight_Data())).grid(row=3, column=0, padx=10, pady=10, rowspan=1)
 
         self.btnGrrCalc.grid(row=5, column=0, padx=10, pady=10, rowspan=True)
         # self.btnSummaryGRR.pack(side='top', padx=10, pady=5, anchor="w")
@@ -99,7 +99,6 @@ class StartPage(object):
         # self.txt_widget = scrolledtext.ScrolledText(self.frameTxt, font=self.font, wrap=tk.WORD)
         # self.txt_widget.pack(expand=True, fill='both')
 
-
         self.create_dataDir()
         # self.show_frame(StartPage)
 
@@ -114,9 +113,7 @@ class StartPage(object):
         self.result_path = os.path.join(self.path, "Result")
         self.Data_logs = os.path.join(self.path, "DataLog")
 
-        # button1 = tk.Button(self, text="Go to Page One",
-        #                     command=lambda: controller.show_frame(PageOne))
-        # button1.pack()
+        # button1 = tk.Button(self, text="Go to Page One", command=lambda: controller.show_frame(PageOne))
 
     def create_frames(self):
         container = tk.Frame(self.master)
@@ -159,14 +156,19 @@ class StartPage(object):
             else:
                 all_grr_csv = os.listdir(self.result_path)
                 for file in all_grr_csv:
-                    if file.endswith(".csv"):
+                    if file.endswith(".csv") and file.endswith(".xlsx"):
                         file_path = os.path.join(self.result_path, file)
                         os.remove(file_path)
-                        print(f'remove csv >>>{file_path}')
+                        print(f'remove file >>>{file_path}')
             # data_path = os.path.join(self.Data_logs, f'trySample.xlsx')
-            data_path = os.path.join(self.path, f'{origin_log_fileName}.xlsx')
-            for w in range(3, avg_weigh):
-                threading.Thread(target=self.util_obj.grr_roasting(data_path, w))
+            data_path = os.path.join(self.path, f'PASS_20231122-221905.xlsx')
+            data_path2 = os.path.join(self.path, f'tryMakingGRR.xlsx')
+
+            if avg_weigh == 3:
+                self.util_obj.grr_roasting(data_path, 3)
+            elif avg_weigh > 3:
+                for w in range(2, avg_weigh):  # avg_weigh
+                    self.util_obj.grr_roasting(data_path2, w)
 
             # for csv_ith, csv in enumerate(grr_csv_):
             """
@@ -217,7 +219,7 @@ class StartPage(object):
                                                   f'Test_Items: {df_info[1]}         Stress_times: {df_info[0]} '
                                                   f'\r\n  StressTest under 90,  cannot run GRR')
                 else:
-                    self.calc_grr(avg_weigh=0)
+                    self.calc_grr(avg_weigh=3)
                     # self.btnGrrCalc.config(state=tk.ACTIVE)
                     self.info_manager.update_info("Open log",
                                                   f'Test_Items: {df_info[1]}         Stress_times: {df_info[0]}')
@@ -283,7 +285,7 @@ class StartPage(object):
                 raise "open txt failure => " + str(ex.args)
         return
 
-    def create_dataDir(self):
+    def create_dataDir(self) -> object:
         dirs_to_create = ['Data']
         for dir_name in dirs_to_create:
             dir_path = os.path.join(self.path, dir_name)
@@ -416,3 +418,4 @@ if __name__ == '__main__':
     root.winfo_toplevel().title("< NPI_Analysis_Tool >")
     app = StartPage(root, title="GRR analysis")
     app.run()
+
