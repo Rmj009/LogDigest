@@ -5,11 +5,15 @@ import datetime
 import numpy as np
 import pandas as pd
 import openpyxl
+
 import xlsxwriter
 from openpyxl.styles import Font, PatternFill
 from openpyxl.formatting.rule import CellIsRule
+from openpyxl.utils.dataframe import dataframe_to_rows
+from openpyxl.utils import get_column_letter
 from DelightXlsx import XlsxManager
 from Gage import Gage
+from mainViz import RfVisualize
 
 global countTestItems
 global LSL_lst
@@ -19,23 +23,52 @@ global project_name
 
 
 class Digest_utils:
-    def __init__(self, pwd):  # proj_alias
+    def __init__(self, pwd):
         self.pwd = pwd
+        self.output_path = os.path.join(pwd, "Result")
         self.xlsxInstance = XlsxManager()
         # self.proj_alias = project_name
+
+    def _plt_chart(self, *args):
+        try:
+            data_path, avg_weigh = args
+            chart_instance = RfVisualize(self.pwd)
+            df = pd.read_excel(data_path, sheet_name=f'GRR{avg_weigh}', index_col=0, header=0, engine='openpyxl')
+            df = df[(df['USL']) != 0 | (df['LSL'] != 0)]  # drop both USL LSL => zero imply GRR => NAN
+            for i, row in enumerate(df.iterrows(), start=2):
+                rowData = row[1][6:]
+                # lsl = df.loc[i-2, 'LSL']
+                lsl = df.iloc[i-2]['LSL']
+                usl = df.iloc[i-2]['USL']
+                # cpk = self._cpk_cooking(rowData, lsl, usl)
+                # if not np.isnan(cpk) or not np.isinf(cpk):
+                    # chart_instance.shewhart(rowData, avg_weigh, cpk)
+                chart_instance.CPK_Chart(rowData, lsl, usl)
+        except Exception as e:
+            print("_plt_chart$exception >>> " + str(e.args))
+
+    def _cpk_cooking(self, *args):
+        try:
+            data, lsl, usl = args
+            mean = np.mean(data)
+            stdev = np.std(data)
+            lll = (usl - mean) / (3 * stdev)
+            uuu = (mean - lsl) / (3 * stdev)
+            cpk = min(lll, uuu)
+        except Exception as e:
+            print("_cpk_cooking$exception >>> " + str(e.args))
+            return np.nan
+        return cpk
 
     def grr_calculation(self, data: np.array, USL, LSL) -> str:
         """
         loop columns to calc
         """
         try:
-            # USL = float(spec_range[0])
-            # LSL = float(spec_range[1])
             USL = float(USL)
             LSL = float(LSL)
             # df_testItem = pd.DataFrame(np.array(df.iloc[:, col_nth]).reshape(10, 9))
             df_testItem = pd.DataFrame(data)
-            # df_testItem = df_testItem.T
             df_testItem.columns = ['A', 'A', 'A', 'B', 'B', 'B', 'C', 'C', 'C']
             df_testItem.index = [i for i in range(10)]
             A_op = df_testItem.iloc[:, :3].values
@@ -43,13 +76,11 @@ class Digest_utils:
             C_op = df_testItem.iloc[:, 6:].values
             # a = np.all(grr_data == np.swapaxes(df_testItem.values, 1, 0))
             grr_data = [A_op, B_op, C_op]
-
             grr_instance = Gage(grr_data, LSL, USL)
-            grr_value = grr_instance.cooking_grr(grr_data)
+            grr_value = grr_instance.cooking_grr()
         except Exception as e:
-            print("grr_calculation NG >>> " + str(e.args))
+            print("grr_calculation exception >>> " + str(e.args))
             return np.nan
-            # raise "grr_calculation NG >>> " + str(e.args)
         return grr_value
 
     def grr_cooking(self, pwd: str, csv_path, avg_weigh):  # vertical GRR calc
@@ -74,40 +105,35 @@ class Digest_utils:
             raise "grr_cooking NG >>> " + str(e.args)
         return self.grr_packingCsv(pwd, csv_path, avg_lst, grr_lst, avg_weigh)
 
-    def grr_roasting(self, data_path, avg_weigh):  # vertical GRR calc
-        """
-        split dataframe into A,B,C blocks
-        :return:
-        """
+    def grr_roasting(self, df, avg_weigh):  # vertical GRR calc
         grr_lst = []
         try:
-            # Load the workbook
-            # wb = openpyxl.load_workbook(data_path, data_only=False)
-            # Get the active sheet
-            # sheet = wb.active
-            # Get the values from column A
-            # column_values = [sheet[f'D{i}'].value for i in range(1, sheet.max_row + 1)]
-            df = pd.read_excel(data_path, header=0, index_col=0, sheet_names=avg_weigh, engine='openpyxl')
+            # df = pd.read_excel(data_path, index_col=0, header=0, engine='openpyxl')
             LSL = df['LSL']
             USL = df['USL']
             for i, row in df.iterrows():
-                select_arr_ith = np.array(row[4:94]).reshape(10, 9)
+                select_arr_ith = np.array(row[5:95]).reshape(10, 9)
                 grr_lst.append(self.grr_calculation(select_arr_ith, USL[i], LSL[i]))
-
+        except IOError as ioe:
+            print("Permission denied, because xlsx is opened! >>" + str(ioe.args))
         except Exception as e:
-            raise "grr_roasting NG >>> " + str(e.args)
-        return self.grr_packingXlsx(data_path, grr_lst, avg_weigh)
+            raise "grr_roasting$NG >>> " + str(e.args)
+        return self.grr_packingXlsx(grr_lst, avg_weigh)
 
     def grr_packingXlsx(self, *args):
-        data_path, grr_lst, avg_weigh = args
+        grr_lst, avg_weigh = args
         current_time = datetime.datetime.now()
         formatted_time = current_time.strftime(f'%H%M%S')
         ft = Font(color="FF0000", bold=True)
+        files = os.listdir(self.output_path)
+        # Sort the files based on modification time (newest first)
+        files.sort(key=lambda x: os.path.getmtime(os.path.join(self.output_path, x)), reverse=True)
+        cpk_xlsx_path = os.path.join(self.output_path, files[0])
         try:
-            wb = openpyxl.load_workbook(data_path, data_only=False)
+            wb = openpyxl.load_workbook(filename=cpk_xlsx_path, data_only=False)
             # Get the active sheet
             sheet = wb.active
-            grr_lst = [np.nan if val == 'NAN' else str(val) for val in grr_lst]
+            grr_lst = [np.nan if val == np.nan else str(val) for val in grr_lst]
             sheet.insert_cols(7)
             GRR_cell = sheet.cell(row=1, column=7, value="GRR")
             GRR_cell.font = ft
@@ -119,7 +145,7 @@ class Digest_utils:
                 if cell_letter != 'G1' and float(cell.value) > 30:
                     sheet.conditional_formatting.add(cell_letter, CellIsRule(operator='greaterThan', formula=['30'], fill=red_fill))
 
-            result_file_path = os.path.join(os.path.join(self.pwd, "Result"), f'Result_avg{avg_weigh}_{formatted_time}.xlsx')
+            result_file_path = os.path.join(os.path.join(self.pwd, "Result"), f'Result_avg_{formatted_time}.xlsx')
             wb.save(result_file_path)
             # df_pack.to_excel(summary_file_path, engine='xlsxwriter')
         except Exception as e:
@@ -167,9 +193,6 @@ class Digest_utils:
             IsLastCol_Literal = True
             if IsLastCol_Literal:
                 self.digest_csv(filepath, csv_data_path, 3)
-            else:
-                self.digest_xlsx()
-
             # df_result.to_csv(f'weight{window}.csv', sep=',')
         except Exception as e:
             raise "grr_data_digest NG >>>" + str(e.args)
@@ -181,7 +204,6 @@ class Digest_utils:
         """
         weighted average by rolling function
         """
-        # arr_lst = []
         mockup_col_name = []
         try:
             df = pd.read_csv(f'{csv_path}', header=0, index_col=0)
@@ -219,72 +241,106 @@ class Digest_utils:
         result_path = args
         current_time = datetime.datetime.now()
         formatted_time = current_time.strftime(f'%H%M%S')
-        # suppose result_xlsx no GRR
         try:
             files = os.listdir(result_path[0])
             # Sort the files based on modification time (newest first)
             files.sort(key=lambda x: os.path.getmtime(os.path.join(result_path[0], x)), reverse=True)
             result_xlsx_filename = os.path.join(result_path[0], files[0])
+            df = pd.read_excel(result_xlsx_filename, index_col=0, header=0, engine='openpyxl')
+            # df = df[(df['USL']) != 0 | (df['LSL'] != 0)]  # drop both USL LSL => zero imply GRR => NAN
             # xls = pd.ExcelFile(result_xlsx_filename, engine='openpyxl')  # "Weighed_result.xlsx"
-            xls = pd.ExcelWriter("hi___2.xlsx", engine='xlsxwriter')  # "Weighed_result.xlsx"
-
+            # sheet_names_inXls = [ n.parse(sheet_name=name) for n in xls.sheet_names]
+            # xls = pd.ExcelWriter("tryMakingGRR.xlsx", engine='xlsxwriter')  # "Weighed_result.xlsx"
             # sheet_name = xls.sheet_names  # barely one sheet literally
             # df = pd.read_excel(xls, sheet_name=xls.sheet_names[0])
-            df = pd.read_excel(result_xlsx_filename, index_col=0, header=0, engine='openpyxl')
             # workbook = xlsxwriter.Workbook(result_xlsx_filename)
-            # for weigh in range(2, avg_weigh - 1):
-            #     self.grr_weigh_pack(xls, df, weigh)
-            workbook = xls.book
-            df.to_excel(xls, sheet_name='Sheet')
-            for s_name in range(2, 6):
-                new_excel_filename = f'GRR{s_name}'
-                # Copy all values from the source worksheet to the destination worksheet
-                workbook_clone = workbook.add_worksheet(new_excel_filename)
-                for r, row in enumerate(df.iterrows(), start=1):
-                    for c, value in enumerate(row[1], start=1):
-                        if pd.isnull(value) or np.isinf(value):
-                            value = None  # Replace NaN/Inf with None
-                        else:
-                            workbook_clone.write(r, c, value)
-                # workbook_clone = workbook.add_worksheet(new_excel_filename)
-                self.xlsxInstance.clone_by_weigh(workbook_clone=workbook_clone, shape=df.shape, sheet_namaiwa='Sheet', new_excel_filename=new_excel_filename, weigh=s_name)
-            xls.close()
-            # mockup_col_name = df.columns[1:-1]
-            # for w, row in df.iterrows():
-            #     # wq = abs(hash(w))
-            #     yy = row[6: df.shape[1]]
-            #     select_arr_ith = row[6: df.shape[1]].rolling(2, min_periods=wq, center=True).mean().values
-            #     select_arr_ith[0] = np.mean(yy[0] + yy[-avg_weigh:])
-            #     # select_arr_ith[-window // 2:] = select_arr_ith[-window // 2]
-            #     # select_arr_ith[:window // 2] = select_arr_ith[window // 2]
-            #     result_file_path = os.path.join(os.path.join(self.pwd, "Result"), f'Result_avg{wq}_{formatted_time}.xlsx')
+            # data_only=True will remove the formula
+            wb = openpyxl.load_workbook(result_xlsx_filename, data_only=False)
+            for weigh in range(2, 6):
+                ws = wb.create_sheet(f'GRR{weigh}', weigh - 1)
+                df_GRR = self.grr_weigh_pack(df, weigh)
+                for r in dataframe_to_rows(df_GRR, index=True, header=True):
+                    ws.append(r)
+                ws.delete_rows(2)
+                # self.xlsxInstance.openpyxl_cooking_CPK(sheet=ws, max_cols=df_GRR.shape[1] + 1)
+                last_col_literal = get_column_letter(df_GRR.shape[1] + 1)
+                for i, cell in enumerate(ws['D'], start=1):  # start from 1 bcoz the skip the first cell => AVG
+                    formula = f'=IFERROR(AVERAGE(H{i}:{last_col_literal}{i}), "N/A")'
+                    cell.value = formula if not cell.value == 'AVG' else "AVG"
+                for i, cell in enumerate(ws['E'], start=1):  # vice versa
+                    formula = f'=IFERROR(STDEV(H{i}:{last_col_literal}{i}), "N/A")'
+                    cell.value = formula if not cell.value == 'STD' else "STD"
+                for i, cell in enumerate(ws['F'], start=1):
+                    formula = f'=IFERROR(MIN((C{i} - D{i}) / (3 * E{i}),(D{i} - B{i})/ (3 * E{i})),"N/A")'
+                    cell.value = formula if not cell.value == 'CPK' else "CPK"
+                red_fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')
+                for cell in ws['G']:
+                    cell_letter = cell.coordinate
+                    if cell_letter != 'G1' and float(cell.value) > 30:
+                        ws.conditional_formatting.add(cell_letter, CellIsRule(operator='greaterThan', formula=['30'], fill=red_fill))
+
+            wb.save(f'NPI_GRR_Result_{formatted_time}.xlsx')
+            # workbook = xls.book
+            # df.to_excel(xls, sheet_name='GRR')  # change sheet name
+            # for s_name in range(2, 6):
+            #     new_excel_filename = f'GRR{s_name}'
+            #     # Copy all values from the source worksheet to the destination worksheet
+            #     workbook_clone = workbook.add_worksheet(new_excel_filename)
+            #     df_GRR = self.grr_weigh_pack(df, s_name)
+            #     self.xlsxInstance.clone_by_weigh(workbook_clone=workbook_clone, shape=df.shape, sheet_namaiwa=f'GRR{s_name}', new_excel_filename=new_excel_filename, weigh=s_name)
+            #     for r, row in enumerate(df_GRR.iterrows(), start=1):
+            #         for c, value in enumerate(row[1], start=1):
+            #             if isinstance(value, (int, float)) and (pd.isnull(value) or np.isinf(value)):
+            #                 value = None  # Replace NaN/Inf with None
+            #             else:
+            #                 workbook_clone.write(r, c, value)
+            #
+            # xls.close()
             # wb.save(result_file_path)
         except Exception as e:
             raise "xlsx file NG >>>" + str(e.args)
 
     def grr_weigh_pack(self, *args):
-        current_time = datetime.datetime.now()
-        formatted_time = current_time.strftime(f'%H%M%S')
-        output_dir = os.path.join(self.pwd, "Result")
-
+        # pure numeric handling
+        grr_lst = []
         try:
-            writer, df, avg_weigh = args
+            df, avg_weigh = args
             result_arr = []
-            # mockup_col_name = df.columns[1:-1]
             for i, row in df.iterrows():
-                yy = row[6: df.shape[1]]
-                indices = [i for i in range(0, -avg_weigh, -1)]
-                select_arr_ith = row[6: df.shape[1]].rolling(avg_weigh, min_periods=avg_weigh, center=True).mean().values
-                select_arr_ith[0] = sum(yy[i] for i in indices) / len(indices)
+                extend_arr = row[6: df.shape[1]]
+                # accumulate collection to extend arr for moving average
+                extend_arr.loc[df.shape[1] - 6] = extend_arr[0]  # 6 => usl, lsl, etc cols
+                if avg_weigh > 2:
+                    extend_arr.loc[df.shape[1] - 6 + 1] = extend_arr[1]
+                if avg_weigh > 3:
+                    extend_arr.loc[df.shape[1] - 6 + 2] = extend_arr[2]
+                if avg_weigh > 4:
+                    extend_arr.loc[df.shape[1] - 6 + 3] = extend_arr[3]
+                select_arr_ith = extend_arr.rolling(avg_weigh, min_periods=avg_weigh, center=False).mean().values
+                select_arr_ith = select_arr_ith[avg_weigh - 1:]
+                # if avg_weigh == 2:
+                #     select_arr_ith = select_arr_ith[1:]
+                # if avg_weigh == 3:
+                #     select_arr_ith = select_arr_ith[2:]
+                # if avg_weigh == 4:
+                #     select_arr_ith = select_arr_ith[3:]
+                # if avg_weigh == 5:
+                #     select_arr_ith = select_arr_ith[4:]
                 result_arr.append(select_arr_ith)
-            # result_file_path = os.path.join(output_dir, f'Result_avg{avg_weigh}_{formatted_time}.xlsx')
+                grr_arr = np.array(select_arr_ith[:90]).reshape(10, 9)
+                grr_lst.append(self.grr_calculation(grr_arr, df['USL'][i], df['LSL'][i]))
+
             df_weigh = pd.DataFrame(result_arr)
-            df_result = self.xlsxInstance.df_constructor(df, df_weigh)
-
-            df_result.to_excel(writer, sheet_name=f'GRR_w{avg_weigh}', index=False)
-
+            df_weigh.index = df.index
+            df_weigh.insert(loc=0, column='LSL', value=df['LSL'])
+            df_weigh.insert(loc=1, column='USL', value=df['USL'])
+            df_weigh.insert(loc=2, column='AVG', value="")
+            df_weigh.insert(loc=3, column='STD', value="")
+            df_weigh.insert(loc=4, column='CPK', value="")
+            df_weigh.insert(loc=5, column=f'GRR{avg_weigh}', value=np.array(grr_lst))
         except Exception as e:
             raise "grr_weigh_pack$NG >>> " + str(e.args)
+        return df_weigh
 
     def grr_summary(self, *args):
         arr_result = []
@@ -311,7 +367,6 @@ class Digest_utils:
 
         except Exception as e:
             raise "grr_summary NG >>> " + str(e.args)
-        return ""
 
     def grr_selection(self, *args):
         avg_result_lst = []
@@ -741,7 +796,6 @@ class Digest_utils:
         countStressTimes = 0
         pattern = r"~"
         ending_keyword = "END MARKED"
-        IsAllcollected = False
         global project_name
         proj = "IMQX"
         try:
@@ -770,8 +824,10 @@ class Digest_utils:
                                 txtFile.write(f'{line.strip()}\n')
                             # Write the file name and line to the CSV file
                             # csv_writer.writerow([file_name, f'{line.strip()}'])
-        except UnicodeDecodeError:
-            print(f"Error decoding file {file}. Skipping...")
+        except IOError as ioe:
+            print(f'Open_log_txt$IOError >>> {ioe.args}')
+        except UnicodeDecodeError as ue:
+            print(f"Open_log_txt$decoding file {file} >>>> {ue.args} \r\n  Skipping...")
         except Exception as e:
             raise "digestFiles$NG >>> " + str(e.args)
         print("----------------")
@@ -810,13 +866,19 @@ class Digest_utils:
                     if test_item_name != testItem_lst[TestItem_nth - 1]:
                         last_TI_index = testItem_lst.index(testItem_lst[-1])
                         if test_item_name not in testItem_lst:
-                            raise Exception("NG$$$$test_item_leaking")
+                            num_lost_lines -= 1
+                            continue
+                            # raise Exception("NG$$$$test_item_leaking")
                         elif test_item_name == testItem_lst[TestItem_nth - 2] and test_item_name != testItem_lst[0]:
                             print("--- testItem retry mechanism ---")
                             num_lost_lines -= 1
                         else:
                             if test_item_name == testItem_lst[-1]:
                                 print("--- reach last testItem ---")
+                                num_lost_lines = countTestItems - len(data_lst)
+                                data_lst = data_lst + [np.nan] * num_lost_lines
+                            elif test_item_name == testItem_lst[0]:
+                                print("--- first testItem NG ---")
                                 num_lost_lines = countTestItems - len(data_lst)
                                 data_lst = data_lst + [np.nan] * num_lost_lines
                             elif test_item_name not in stack_testItem_lst:
@@ -838,8 +900,8 @@ class Digest_utils:
                     #     data_lst = data_lst + [np.nan] * a
                     #     a = a - 1
                     if len(data_lst) == len(testItem_lst):  # slicing data values into groups
-                        if all(np.isnan(x) for x in np.array(data_lst).astype(float) if isinstance(x, (int, float))):
-                            raise Exception("all values NAN")
+                        # if all(np.isnan(x) for x in np.array(data_lst).astype(float) if isinstance(x, (int, float))):
+                        #     raise Exception("all values NAN")
                         all_lst.append(data_lst)  # all_array = np.concatenate((all_array, np.array([data_lst])), axis=0)
                         data_lst = []
                         stack_testItem_lst = testItem_lst.copy()
@@ -859,40 +921,35 @@ class Digest_utils:
                     #     testItem_values = line[index2 + len(keyword2):].strip()
                     #     data_lst = []
                     #     data_lst.append(testItem_values)
-                self.pack_result(all_lst, LSL_lst, USL_lst, testItem_lst, result_fileName)
+                df = self.pack_result(all_lst, LSL_lst, USL_lst, testItem_lst, result_fileName)
+                return df
         except Exception as e:
             raise "washing$NG >>> " + str(e.args)
         finally:
             file.close()
 
-    def pack_result(self, result_list, LSL_lst, USL_lst, testItem_lst, result_fileName):
+    def pack_result(self, result_list, LSL_lst, USL_lst, testItem_lst, result_fileName) -> pd.DataFrame():
 
         try:
             df = pd.DataFrame(np.array(result_list))
-            # df.index = (df.index[0:] + 2).tolist()
-            # df.loc[0] = pd.Series(LSL_lst)  # insert SPEC
-            # df.loc[1] = pd.Series(USL_lst)  # insert SPEC
-            # df = df.sort_index()
-            df.columns = pd.Series(testItem_lst)  # insert test item name
+            df.columns = pd.Series(testItem_lst)
             df = df.T
             df.insert(loc=0, column='LSL', value=LSL_lst)
             df.insert(loc=1, column='USL', value=USL_lst)
             df.insert(loc=2, column='AVG', value="")
             df.insert(loc=3, column='STD', value="")
             df.insert(loc=4, column='CPK', value="")
-            # df.rename(columns={0: 'LSL'}, inplace=True)
-            # df.rename(columns={1: 'USL'}, inplace=True)
+            # df.insert(loc=5, column='GRR', value="")
             # df.reset_index()
-            writer = pd.ExcelWriter(f'{result_fileName}.xlsx', engine='xlsxwriter',
-                                    engine_kwargs={'options': {'strings_to_numbers': True}})
+            result_cpk_xlsx = os.path.join(self.output_path, result_fileName)
+            writer = pd.ExcelWriter(f'{result_cpk_xlsx}.xlsx', engine='xlsxwriter', engine_kwargs={'options': {'strings_to_numbers': True}})
             df.to_excel(writer, sheet_name='Sheet1')
             self.xlsxInstance.cooking_xCPK(writer=writer, shape=df.shape)
+            return df
         except IOError as e:
             print("Xlsx File already open! >>> " + str(e.args))
         except Exception as e:
             raise "pack_result$NG >>> " + str(e.args)
-        finally:
-            pass
 
     def result_display(self, *args):
         try:

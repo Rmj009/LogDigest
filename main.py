@@ -31,12 +31,11 @@ class StartPage(object):
         # self.combo = ttk.Combobox(self.frame, state="readonly", values=["GGR1", "GGR2", "GGR3", "GGR4", "GGR5"])
         # self.btnPages = tk.Button(self.frame, text="open pages", command=lambda: self.create_frames())
         self.btnOpen = tk.Button(self.frame, text="Open", command=lambda: self.open_grr_file())
-        self.btnOpenLog = tk.Button(self.frame, text="Open", command=lambda: self.open_log_txt())
-        self.btnSummaryGRR = tk.Button(self.frame, text="GRR Summary", command=lambda: self.summary_grr())
-        self.btnConcludeGRR = tk.Button(self.frame, text="GRR Conclusion", command=lambda: self.final_grr())
-        self.btnGrrCalc = tk.Button(self.frame, text="GRR Calculation",
-                                    command=lambda: threading.Thread(target=self.calc_grr(avg_weigh=6)))  # self.chooseFile()
-
+        self.btnOpenLog = tk.Button(self.frame, text="Open", command=lambda: threading.Thread(target=self.open_log_txt()))
+        # self.btnSummaryGRR = tk.Button(self.frame, text="GRR Summary", command=lambda: self.summary_grr())
+        # self.btnConcludeGRR = tk.Button(self.frame, text="GRR Conclusion", command=lambda: self.final_grr())
+        self.btnGrrCalc = tk.Button(self.frame, text="GRR Calculation", command=lambda: threading.Thread(target=self.Clone_Weight_Data()))
+        self.btnSchewart = tk.Button(self.frame, text="Diagram", command=lambda: self.CpkChart_schewart())
         # Combobox creation
         n = tk.StringVar(self.frame, "1")
         values = {"GRR": "1",
@@ -52,9 +51,10 @@ class StartPage(object):
         # self.combo.pack(side='top', padx=5, pady=5, anchor="w")
         # tk.Label(self.frame, text="What is your favorite car barnd?").grid(row=0, column=0, columnspan=3, pady=10, padx=10)
         # for (text, value) in values.items():
-        tk.Checkbutton(self.frame, text="weight GGR1~GRR5", command=lambda: threading.Thread(target=self.Clone_Weight_Data())).grid(row=3, column=0, padx=10, pady=10, rowspan=1)
+        # tk.Checkbutton(self.frame, text="weight GGR1~GRR5", command=lambda: threading.Thread(target=self.Clone_Weight_Data())).grid(row=3, column=0, padx=10, pady=10, rowspan=1)
 
         self.btnGrrCalc.grid(row=5, column=0, padx=10, pady=10, rowspan=True)
+        self.btnSchewart.grid(row=6, column=0, padx=10, pady=10, rowspan=True)
         # self.btnSummaryGRR.pack(side='top', padx=10, pady=5, anchor="w")
         # self.btnConcludeGRR.pack(side='top', padx=10, pady=5, anchor="w")
         # self.btnPages.pack(side='top', padx=10, pady=5, anchor="w")
@@ -84,8 +84,8 @@ class StartPage(object):
         # self.btnReadRxCalf5.pack(side='top', padx=10, pady=5, anchor="w")
         self.btnExit = tk.Button(self.frame, text="Close", command=lambda: master.quit())
         self.btnExit.grid(row=20, column=0, padx=10, pady=10, rowspan=True)
-        self.btnSummaryGRR.config(state=tk.DISABLED)
-        self.btnConcludeGRR.config(state=tk.DISABLED)
+        # self.btnSummaryGRR.config(state=tk.DISABLED)
+        # self.btnConcludeGRR.config(state=tk.DISABLED)
         # self.combo.config(state=tk.DISABLED)
         # self.btnReadWifiTx.config(state=tk.DISABLED)
         # self.btnReadWifiRx.config(state=tk.DISABLED)
@@ -147,28 +147,24 @@ class StartPage(object):
             messagebox.showerror("Summary NG", "Plz retry")
             raise "summary_grr NG >>> " + str(e.args)
 
-    def calc_grr(self, avg_weigh):
+    def calc_grr(self, df, avg_weigh):
         global origin_log_fileName
         try:
             # csv_ith = self.combo.get()[3]  # need debug
-            if not os.path.exists(self.result_path):
-                os.mkdir(self.result_path)
-            else:
-                all_grr_csv = os.listdir(self.result_path)
-                for file in all_grr_csv:
-                    if file.endswith(".csv") and file.endswith(".xlsx"):
-                        file_path = os.path.join(self.result_path, file)
-                        os.remove(file_path)
-                        print(f'remove file >>>{file_path}')
+            # if not os.path.exists(self.result_path):
+            #     os.mkdir(self.result_path)
+            # else:
+            #     all_grr_csv = os.listdir(self.result_path)
+            #     for file in all_grr_csv:
+            #         if file.endswith(".csv") or file.endswith(".xlsx"):
+            #             file_path = os.path.join(self.result_path, file)
+            #             os.remove(file_path)
+            #             print(f'remove file >>>{file_path}')
             # data_path = os.path.join(self.Data_logs, f'trySample.xlsx')
-            data_path = os.path.join(self.path, f'PASS_20231122-221905.xlsx')
-            data_path2 = os.path.join(self.path, f'tryMakingGRR.xlsx')
-
-            if avg_weigh == 3:
-                self.util_obj.grr_roasting(data_path, 3)
-            elif avg_weigh > 3:
-                for w in range(2, avg_weigh):  # avg_weigh
-                    self.util_obj.grr_roasting(data_path2, w)
+            self.util_obj.grr_roasting(df, avg_weigh=3)
+            # elif avg_weigh > 3:
+            #     for w in range(2, avg_weigh):  # avg_weigh
+            #         self.util_obj.grr_roasting(data_path2, w)
 
             # for csv_ith, csv in enumerate(grr_csv_):
             """
@@ -189,7 +185,20 @@ class StartPage(object):
         try:
             self.util_obj.digest_xlsx(self.result_path)
             self.info_manager.update_info("clone via weight", f'{self.result_path}')
-            self.btnConcludeGRR.config(state=tk.ACTIVE)
+            # self.btnConcludeGRR.config(state=tk.ACTIVE)
+        except Exception as e:
+            messagebox.showerror("Clone_Weight_Data$NG", "Plz retry")
+            raise "Clone_Weight_Data$NG >>> " + str(e.args)
+
+    def CpkChart_schewart(self):
+        try:
+            diagram_folder = os.path.join(self.path, "Diagram")
+            os.mkdir(diagram_folder) if not os.path.exists(diagram_folder) else None
+            files = os.listdir(self.result_path)
+            files.sort(key=lambda x: os.path.getmtime(os.path.join(self.result_path, x)), reverse=True)
+            lates_xlsx_file = os.path.join(self.result_path, files[0])
+            self.util_obj._plt_chart(lates_xlsx_file, 2)
+            self.info_manager.update_info("Plotting CPK", f'show Diagram in {diagram_folder}')
         except Exception as e:
             messagebox.showerror("Clone_Weight_Data$NG", "Plz retry")
             raise "Clone_Weight_Data$NG >>> " + str(e.args)
@@ -213,13 +222,14 @@ class StartPage(object):
                 # Sort the files based on modification time (newest first)
                 files.sort(key=lambda x: os.path.getmtime(os.path.join(self.Data_logs, x)), reverse=True)
                 origin_log_fileName = os.path.splitext(os.path.basename(logPath))[0]
-                self.util_obj.washing(os.path.join(self.Data_logs, files[0]), df_info, origin_log_fileName)
+                df = self.util_obj.washing(os.path.join(self.Data_logs, files[0]), df_info, origin_log_fileName)
+                # ----- acquire GRR column -----
                 if df_info[0] < 90:
                     self.info_manager.update_info("Open log",
                                                   f'Test_Items: {df_info[1]}         Stress_times: {df_info[0]} '
                                                   f'\r\n  StressTest under 90,  cannot run GRR')
                 else:
-                    self.calc_grr(avg_weigh=3)
+                    self.calc_grr(df=df, avg_weigh=3)
                     # self.btnGrrCalc.config(state=tk.ACTIVE)
                     self.info_manager.update_info("Open log",
                                                   f'Test_Items: {df_info[1]}         Stress_times: {df_info[0]}')
@@ -229,11 +239,9 @@ class StartPage(object):
             else:
                 messagebox.showerror("Error File Type", "Err file reload file again")
                 self.info_manager.update_info("Open NG", "Try reload file again")
-                return False
         except Exception as e:
             messagebox.showerror("FILE_ERR", "Invalid data log or EngMode data, Plz reload file")
             raise "log file NG >>> " + str(e.args)
-        return True
 
     def open_grr_file(self):
         try:
@@ -418,4 +426,3 @@ if __name__ == '__main__':
     root.winfo_toplevel().title("< NPI_Analysis_Tool >")
     app = StartPage(root, title="GRR analysis")
     app.run()
-
