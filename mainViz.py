@@ -1,6 +1,6 @@
 import json
 from abc import ABCMeta, abstractmethod
-# import seaborn as sns
+import seaborn as sns
 from pandas.api.types import CategoricalDtype
 import matplotlib
 import matplotlib.cm
@@ -9,9 +9,11 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import pandas as pd
 import numpy as np
+import statistics as stats
 # import joypy
 import os
 from matplotlib.pyplot import figure
+import datetime
 
 
 # from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -51,20 +53,16 @@ class VizRF(metaclass=ABCMeta):
     def __init__(self):
         self.filePath = None
         self.possess()
-        self.AsePlot()
 
     @abstractmethod
     def possess(self):
         """技能表演"""
         pass
 
-    @abstractmethod
-    def AsePlot(self):
-        """plot to analyze"""
-        pass
 
-
-class RfVisualize(VizRF):
+class RfVisualize:
+    def __init__(self, pwd):
+        self.Diagram_path = os.path.join(pwd, "Diagram")
 
     @staticmethod
     def DigestSketchData(filePath: str) -> pd.DataFrame():
@@ -74,13 +72,6 @@ class RfVisualize(VizRF):
             raise "DigestSketchData err" + str(ee.args)
 
         return df
-
-    def possess(self):
-        pass
-
-    def AsePlot(self):
-        """plot to analyze"""
-        pass
 
     # @staticmethod
     # def ridgeLine2(df: pd.DataFrame, GraphPath: str, WifiCategory: str, IsSave: bool):
@@ -314,8 +305,8 @@ class RfVisualize(VizRF):
     # @staticmethod
     # def custom_kdeplot(*args, **kwargs):
     #     sns.kdeplot(data=args.df, x="EVM", hue="category", fill=False, common_norm=False, alpha=.5, ax=plt.gca())
-        # sns.kdeplot(x=kwargs['Power'], bw_adjust=.5, fill=False, alpha=.5, linewidth=0,
-        #             color="blue", ax=plt.gca())
+    # sns.kdeplot(x=kwargs['Power'], bw_adjust=.5, fill=False, alpha=.5, linewidth=0,
+    #             color="blue", ax=plt.gca())
 
     @staticmethod
     def switchPlotStyle(*args):
@@ -329,10 +320,7 @@ class RfVisualize(VizRF):
 
     @staticmethod
     def displayComparison(*args):
-        IsSaveALL = args[0]
-        folder_path = args[1]  # sourcePath
-        graphPath = args[2]  # graphFig
-        configFile = args[3]
+        IsSaveALL, folder_path, graphPath, configFile = args
         try:
             csv_files = [f for f in os.listdir(folder_path) if f.endswith('.csv')]
             csv_files = sorted(csv_files, key=lambda x: os.path.getmtime(os.path.join(folder_path, x)))
@@ -347,11 +335,75 @@ class RfVisualize(VizRF):
         except Exception as ee:
             raise str('__name__') + str(ee.args)
 
+    def shewhart(self, *args):
+        """
+        histogram with USL, LSL
+        https://bobby-j-williams.medium.com/python-and-process-control-part-1-db7b6dddfae8
+        """
+        data,  weigh, cpk = args
+        current_time = datetime.datetime.now()
+        formatted_time = current_time.strftime(f'%H%M%S%f')
+        output_path = os.path.join(self.Diagram_path, f'{formatted_time}')
+        try:
+            process_mean = stats.mean(data)
+            # Define list variable for group means
+            # process_x_bar = []
+
+            # Define list variable for group standard deviations
+            process_stddev = stats.stdev(data)
+            # process_stddev = stats.mean(process_stddev)
+            # Plot the XBar chart
+            fig, ax = plt.subplots(figsize=(10, 6))
+
+            # Create the XBar chart
+            ax.plot(data, linestyle='-', marker='o', color='blue')
+
+            # Create the Upper Control Limit Line
+            UCL = process_mean + 3 * process_stddev
+            ax.axhline(UCL, color='red')
+
+            # Create the Lower Control Limit Line
+            LCL = process_mean - 3 * process_stddev
+            ax.axhline(LCL, color='red')
+
+            # Create the Xbar line
+            ax.axhline(process_mean, color='green')
+
+            # Create a chart title
+            ax.set_title('XBar Chart')
+
+            # Label the axes
+            ax.set(xlabel='Sample', ylabel='Mean')
+
+            # Determine the x-axis limits in the chart to attach reference values
+            left, right = ax.get_xlim()
+            ax.text(right + 0.3, UCL, "UCL = " + str("{:.2f}".format(UCL)), color='red')
+            ax.text(right + 0.3, process_mean, r'$\bar{x}$' + " = " + str("{:.2f}".format(process_mean)), color='green')
+            ax.text(right + 0.3, LCL, "LCL = " + str("{:.2f}".format(LCL)), color='red')
+            plt.savefig(f'{output_path}.png')
+
+        except Exception as e:
+            raise str('__name__') + str(e.args)
+
+    def CPK_Chart(self, *args):
+        data, lsl, usl = args
+        current_time = datetime.datetime.now()
+        formatted_time = current_time.strftime(f'%H%M%S%f')
+        output_path = os.path.join(self.Diagram_path, f'CPK$NG_{formatted_time}')
+        try:
+            hist_plot = sns.histplot(data=data, kde=True)
+            fig, ax = plt.subplots()
+            ax.vlines([float(lsl), float(usl)], 0, 10,
+                      color="green",
+                      transform=ax.get_xaxis_transform())
+            fig = hist_plot.get_figure()
+            fig.savefig(f'{output_path}.png')  # os.path.join(self.Diagram_path, f'{data.name}')
+        except Exception as e:
+            raise f'{__name__}$NG >>> {e.args}'
+
     @staticmethod
     def mainViz(*args):  # canvas: FigureCanvasTkAgg()
-        IsSaveALL = args[0]
-        folder_path = args[1]  # sourcePath
-        graphPath = args[2]  # graphFig
+        IsSaveALL, folder_path, graphPath = args[0]
         try:
             csv_files = [f for f in os.listdir(folder_path) if f.endswith('.csv')]
             csv_files = sorted(csv_files, key=lambda x: os.path.getmtime(os.path.join(folder_path, x)))

@@ -3,7 +3,7 @@
 import openpyxl
 from openpyxl.styles import PatternFill
 from openpyxl.formatting.rule import CellIsRule
-
+from openpyxl.utils import get_column_letter, column_index_from_string
 import xlsxwriter
 from xlsxwriter.utility import xl_rowcol_to_cell, xl_col_to_name
 
@@ -15,6 +15,14 @@ class XlsxManager(object):
 
     def __init__(self):
         pass
+
+    # def openpyxl_cooking_CPK(self, sheet, max_cols):
+    #     try:
+    #         last_col_literal = get_column_letter(max_cols)
+    #         for i, cellObj in enumerate(sheet.columns['AVG'], start=1):
+    #             cellObj.value = f'=IFERROR(AVERAGE(H{i}:{last_col_literal}{i}), "N/A")'
+    #     except Exception as e:
+    #         raise "openpyxl_cooking_CPK$NG >>>" + str(e.args)
 
     def clone_by_weigh(self, workbook_clone, shape, sheet_namaiwa, new_excel_filename, weigh):
         try:
@@ -73,12 +81,12 @@ class XlsxManager(object):
             # get rid of extra added columns: AVG, STD, CPK, LSL, USL
             for row in range(1, df_row_num + 1):
                 for col_num in range(start_col, end_col):
-                    formula = f'=IFERROR(AVERAGE(G{row + 1}:{corresponding_column}{row + 1}), "N/A")'
+                    formula = f'=IFERROR(AVERAGE(H{row + 1}:{corresponding_column}{row + 1}), "N/A")'
                     worksheet.write_formula(f'D{row + 1}', formula)
             # ---------------------------------------------------------------------------
             for row in range(1, df_row_num + 1):
                 for col_num in range(start_col, end_col):
-                    formula = f'=IFERROR(STDEV(G{row + 1}:{corresponding_column}{row + 1}), "N/A")'
+                    formula = f'=IFERROR(STDEV(H{row + 1}:{corresponding_column}{row + 1}), "N/A")'
                     worksheet.write_formula(f'E{row + 1}', formula)
             # ---------------------------------------------------------------------------
             for row in range(1, df_row_num + 1):
@@ -95,12 +103,6 @@ class XlsxManager(object):
             workbook.close()
         except Exception as e:
             raise "cooking_CPK$NG >>> " + str(e.args)
-
-    def df_constructor(self, df, df_weigh):
-        try:
-            pass
-        except Exception as e:
-            raise ""
 
     # def grr_packingXlsx(self, *args):
     #     data_path, grr_lst, avg_weigh = args
