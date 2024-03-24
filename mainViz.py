@@ -1,10 +1,10 @@
-import json
+# import json
 from abc import ABCMeta, abstractmethod
 import seaborn as sns
 from pandas.api.types import CategoricalDtype
-import matplotlib
-import matplotlib.cm
-import matplotlib.colors as colors
+# import matplotlib
+# import matplotlib.cm
+# import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import pandas as pd
@@ -12,7 +12,8 @@ import numpy as np
 import statistics as stats
 # import joypy
 import os
-from matplotlib.pyplot import figure
+import re
+# from matplotlib.pyplot import figure
 import datetime
 
 
@@ -340,23 +341,25 @@ class RfVisualize:
         histogram with USL, LSL
         https://bobby-j-williams.medium.com/python-and-process-control-part-1-db7b6dddfae8
         """
-        data,  weigh, cpk = args
+        data, weigh, cpk = args
+        testName = re.sub(r'[./]', '', data[0])
+        testdata = data[1]
         current_time = datetime.datetime.now()
-        formatted_time = current_time.strftime(f'%H%M%S%f')
-        output_path = os.path.join(self.Diagram_path, f'{formatted_time}')
+        formatted_time = current_time.strftime(f'%H%M%S')
+        output_path = os.path.join(self.Diagram_path, f'{testName}{formatted_time}')
         try:
-            process_mean = stats.mean(data)
+            process_mean = stats.mean(testdata)
             # Define list variable for group means
             # process_x_bar = []
 
             # Define list variable for group standard deviations
-            process_stddev = stats.stdev(data)
+            process_stddev = stats.stdev(testdata)
             # process_stddev = stats.mean(process_stddev)
             # Plot the XBar chart
             fig, ax = plt.subplots(figsize=(10, 6))
 
             # Create the XBar chart
-            ax.plot(data, linestyle='-', marker='o', color='blue')
+            ax.plot(testdata, linestyle='-', marker='o', color='blue')
 
             # Create the Upper Control Limit Line
             UCL = process_mean + 3 * process_stddev
@@ -370,10 +373,10 @@ class RfVisualize:
             ax.axhline(process_mean, color='green')
 
             # Create a chart title
-            ax.set_title('XBar Chart')
+            ax.set_title(data[0])
 
             # Label the axes
-            ax.set(xlabel='Sample', ylabel='Mean')
+            ax.set(xlabel='Samples', ylabel='Power')
 
             # Determine the x-axis limits in the chart to attach reference values
             left, right = ax.get_xlim()
@@ -386,18 +389,45 @@ class RfVisualize:
             raise str('__name__') + str(e.args)
 
     def CPK_Chart(self, *args):
-        data, lsl, usl = args
+        data, lsl, usl, cpk = args
         current_time = datetime.datetime.now()
-        formatted_time = current_time.strftime(f'%H%M%S%f')
-        output_path = os.path.join(self.Diagram_path, f'CPK$NG_{formatted_time}')
+        formatted_time = current_time.strftime(f'%H%M%S')
+        testName = re.sub(r'[./]', '', data[0])
+        output_path = os.path.join(self.Diagram_path, f'CPK$NG_{testName}{formatted_time}')
+        # num_bins = 1
         try:
-            hist_plot = sns.histplot(data=data, kde=True)
-            fig, ax = plt.subplots()
-            ax.vlines([float(lsl), float(usl)], 0, 10,
-                      color="green",
+            # fig, ax = plt.subplots()
+            plt.figure(figsize=(10, 6))
+            hist_plot = sns.histplot(data=data, kde=True, fill=False)  # kde_kws={'gridsize': 10}
+            ax = plt.gca()
+            plt.grid(True)
+
+            # n, bins, patches = plt.hist(stats.mean(data), num_bins,
+            #                             density=True,
+            #                             color='green',
+            #                             alpha=0.7)
+            # plt.plot(bins, data, '--', color='black')
+            # plt.xlabel('X-Axis')
+            # plt.ylabel('Y-Axis')
+            # plt.title('Cpk_Process_analysis \n\n',
+            #           fontweight="bold")
+            # plt.show()
+            ax.vlines(x=float(lsl), ymin=float(lsl), ymax=ax.get_ylim()[1],
+                      color="teal",
+                      linestyles="dashed",
+                      label="LSL",
                       transform=ax.get_xaxis_transform())
-            fig = hist_plot.get_figure()
-            fig.savefig(f'{output_path}.png')  # os.path.join(self.Diagram_path, f'{data.name}')
+            ax.vlines(x=float(usl), ymin=float(lsl), ymax=ax.get_ylim()[1],
+                      color="red",
+                      linestyles="dashed",
+                      label="USL",
+                      transform=ax.get_xaxis_transform())
+            plt.legend(bbox_to_anchor=(1.0, 1), loc='upper left')
+            ax.set_title(label=testName)
+            # fig = hist_plot.get_figure()
+            # plt.legend()
+            plt.savefig(f'{output_path}.png')
+            # fig.savefig(f'{output_path}.png')  # os.path.join(self.Diagram_path, f'{data.name}')
         except Exception as e:
             raise f'{__name__}$NG >>> {e.args}'
 
