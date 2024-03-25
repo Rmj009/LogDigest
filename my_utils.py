@@ -15,12 +15,6 @@ from DelightXlsx import XlsxManager
 from Gage import Gage
 from mainViz import RfVisualize
 
-global countTestItems
-global LSL_lst
-global USL_lst
-global testItem_lst
-global project_name
-
 
 class Digest_utils:
     def __init__(self, pwd):
@@ -35,23 +29,29 @@ class Digest_utils:
             chart_instance = RfVisualize(self.pwd)
             df = pd.read_excel(data_path, sheet_name=f'GRR{avg_weigh}', index_col=0, header=0, engine='openpyxl')
             df = df[(df['USL']) != 0 | (df['LSL'] != 0)]  # drop both USL LSL => zero imply GRR => NAN
+            lsl_lst = df['LSL']
+            usl_lst = df['USL']
+            df = df.iloc[:, 6:]  # acquire data except avg, usl, lsl..,
             for i, row in enumerate(df.iterrows(), start=2):
-                rowData = row[1][6:]
-                # lsl = df.loc[i-2, 'LSL']
-                lsl = df.iloc[i-2]['LSL']
-                usl = df.iloc[i-2]['USL']
-                # cpk = self._cpk_cooking(rowData, lsl, usl)
-                # if not np.isnan(cpk) or not np.isinf(cpk):
-                    # chart_instance.shewhart(rowData, avg_weigh, cpk)
-                chart_instance.CPK_Chart(rowData, lsl, usl)
+                # rowData = row[1][6:]
+                lsl = lsl_lst.iloc[i-2]
+                usl = usl_lst.iloc[i-2]
+                # lsl = df.iloc[i - 2]['LSL']
+                # usl = df.iloc[i - 2]['USL']
+                cpk = self._cpk_cooking(row, lsl, usl)
+                if not np.isnan(cpk) or not np.isinf(cpk):
+                    # chart_instance.shewhart(row, avg_weigh, cpk)
+                    chart_instance.CPK_Chart(row, lsl, usl, cpk)
         except Exception as e:
             print("_plt_chart$exception >>> " + str(e.args))
+            raise str(__name__) + f'$NG{e.args}'
 
     def _cpk_cooking(self, *args):
         try:
             data, lsl, usl = args
-            mean = np.mean(data)
-            stdev = np.std(data)
+            testdata = data[1]
+            mean = np.mean(testdata)
+            stdev = np.std(testdata)
             lll = (usl - mean) / (3 * stdev)
             uuu = (mean - lsl) / (3 * stdev)
             cpk = min(lll, uuu)
@@ -303,11 +303,17 @@ class Digest_utils:
     def grr_weigh_pack(self, *args):
         # pure numeric handling
         grr_lst = []
+
         try:
-            df, avg_weigh = args
+            data, avg_weigh = args
             result_arr = []
+            df = data[~data.applymap(lambda x: isinstance(x, str)).any(axis=1)]
             for i, row in df.iterrows():
                 extend_arr = row[6: df.shape[1]]
+                if any(extend_arr.apply(lambda x: isinstance(x, str))):
+                    grr_lst.append(np.nan)
+                    df.drop(i, inplace=True)
+                    continue
                 # accumulate collection to extend arr for moving average
                 extend_arr.loc[df.shape[1] - 6] = extend_arr[0]  # 6 => usl, lsl, etc cols
                 if avg_weigh > 2:
@@ -317,20 +323,14 @@ class Digest_utils:
                 if avg_weigh > 4:
                     extend_arr.loc[df.shape[1] - 6 + 3] = extend_arr[3]
                 select_arr_ith = extend_arr.rolling(avg_weigh, min_periods=avg_weigh, center=False).mean().values
-                select_arr_ith = select_arr_ith[avg_weigh - 1:]
-                # if avg_weigh == 2:
-                #     select_arr_ith = select_arr_ith[1:]
-                # if avg_weigh == 3:
-                #     select_arr_ith = select_arr_ith[2:]
-                # if avg_weigh == 4:
-                #     select_arr_ith = select_arr_ith[3:]
-                # if avg_weigh == 5:
-                #     select_arr_ith = select_arr_ith[4:]
+                select_arr_ith = select_arr_ith[avg_weigh - 1:]  # select non nan part made from rolling()
                 result_arr.append(select_arr_ith)
                 grr_arr = np.array(select_arr_ith[:90]).reshape(10, 9)
                 grr_lst.append(self.grr_calculation(grr_arr, df['USL'][i], df['LSL'][i]))
 
             df_weigh = pd.DataFrame(result_arr)
+            # if hasLiterals:
+            #     df.drop(removeItem, inplace=True)
             df_weigh.index = df.index
             df_weigh.insert(loc=0, column='LSL', value=df['LSL'])
             df_weigh.insert(loc=1, column='USL', value=df['USL'])
@@ -785,8 +785,8 @@ class Digest_utils:
 
     def Open_log_txt(self, file_path, output_csv_path):
         global testItem_lst
-        global USL_lst
-        global LSL_lst
+        # global USL_lst
+        # global LSL_lst
         keyword1 = "SPEC:"
         keyword2 = "Value:"
         flag = False
@@ -796,7 +796,6 @@ class Digest_utils:
         countStressTimes = 0
         pattern = r"~"
         ending_keyword = "END MARKED"
-        global project_name
         proj = "IMQX"
         try:
             with open(output_csv_path, 'w', newline='', encoding='utf-16') as txtFile:
@@ -831,7 +830,7 @@ class Digest_utils:
         except Exception as e:
             raise "digestFiles$NG >>> " + str(e.args)
         print("----------------")
-        result = (countStressTimes, len(testItem_lst))
+        result = (countStressTimes, len(testItem_lst), LSL_lst, USL_lst)
         return result
 
     def washing(self, file_path, df_info, result_fileName):
@@ -843,10 +842,11 @@ class Digest_utils:
         keyword1 = "SPEC:"
         keyword2 = "Value:"
         all_lst = []
-        # all_array = np.empty((0, 2))
+        LSL_lst = df_info[2]
+        USL_lst = df_info[3]
         data_lst = []
-        countTestItems = df_info[1]  # 5810
-        a = 0  # compensate for test item not run
+        countTestItems = df_info[1]
+        # compensate for test item not run
         num_lost_lines = 0
         stack_testItem_lst = testItem_lst.copy()
         try:
@@ -865,22 +865,32 @@ class Digest_utils:
                     # add datalst after checking data value reference to testItem,
                     if test_item_name != testItem_lst[TestItem_nth - 1]:
                         last_TI_index = testItem_lst.index(testItem_lst[-1])
-                        if test_item_name not in testItem_lst:
+                        first_TI_index = testItem_lst.index(testItem_lst[0])
+                        if test_item_name == testItem_lst[0]:
+                            print("--- NG but Begin 1st testItem ---")
+                            testItem_remain = len(stack_testItem_lst)
+                            num_lost_lines -= testItem_remain
+                            data_lst = data_lst + [np.nan] * abs(testItem_remain)
+                            # compensate for last NG lines
+                            # stack_testItem_lst = testItem_lst.copy()
+                            # stack_testItem_lst.pop(0)
+                            # data_lst.append(testItem_values)
+                        elif test_item_name not in testItem_lst:
                             num_lost_lines -= 1
                             continue
                             # raise Exception("NG$$$$test_item_leaking")
-                        elif test_item_name == testItem_lst[TestItem_nth - 2] and test_item_name != testItem_lst[0]:
-                            print("--- testItem retry mechanism ---")
-                            num_lost_lines -= 1
                         else:
                             if test_item_name == testItem_lst[-1]:
                                 print("--- reach last testItem ---")
                                 num_lost_lines = countTestItems - len(data_lst)
-                                data_lst = data_lst + [np.nan] * num_lost_lines
+                                data_lst = data_lst + [np.nan] * abs(num_lost_lines)
+                            elif test_item_name == testItem_lst[TestItem_nth - 2] and test_item_name != testItem_lst[0]:
+                                print("--- testItem retry mechanism or show NG item again ---")
+                                num_lost_lines -= 1
                             elif test_item_name == testItem_lst[0]:
                                 print("--- first testItem NG ---")
                                 num_lost_lines = countTestItems - len(data_lst)
-                                data_lst = data_lst + [np.nan] * num_lost_lines
+                                data_lst = data_lst + [np.nan] * abs(num_lost_lines)
                             elif test_item_name not in stack_testItem_lst:
                                 print("--- might be big retry involved ---")
                                 num_lost_lines -= 1
@@ -888,7 +898,7 @@ class Digest_utils:
                                 print("--- testItem skip bcoz test failed ---")
                                 print("--- testItem NG, goto next round")
                                 num_lost_lines = testItem_lst.index(test_item_name)
-                                data_lst = data_lst + [np.nan] * num_lost_lines
+                                data_lst = data_lst + [np.nan] * abs(num_lost_lines)
                     else:
                         stack_testItem_lst.pop(0)
                         data_lst.append(testItem_values)

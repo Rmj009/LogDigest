@@ -398,8 +398,9 @@ class RfVisualize:
         try:
             # fig, ax = plt.subplots()
             plt.figure(figsize=(10, 6))
-            hist_plot = sns.histplot(data=data, kde=True, fill=False)  # kde_kws={'gridsize': 10}
-            ax = plt.gca()
+            ax = sns.histplot(data=data, kde=True, fill=False, legend=False)  # kde_kws={'gridsize': 10}
+            # sns.move_legend(ax, "center right")
+            # ax = plt.gca()
             plt.grid(True)
 
             # n, bins, patches = plt.hist(stats.mean(data), num_bins,
@@ -413,16 +414,25 @@ class RfVisualize:
             #           fontweight="bold")
             # plt.show()
             ax.vlines(x=float(lsl), ymin=float(lsl), ymax=ax.get_ylim()[1],
-                      color="teal",
+                      color="red",
                       linestyles="dashed",
-                      label="LSL",
+                      # label="LSL",
                       transform=ax.get_xaxis_transform())
             ax.vlines(x=float(usl), ymin=float(lsl), ymax=ax.get_ylim()[1],
                       color="red",
                       linestyles="dashed",
-                      label="USL",
+                      # label="USL",
                       transform=ax.get_xaxis_transform())
-            plt.legend(bbox_to_anchor=(1.0, 1), loc='upper left')
+            # legend_elements = plt.legend(loc='upper right').legendHandles
+            plt.text(x=0.95, y=0.95, s="USL", ha='right', va='top',
+                     bbox=dict(boxstyle='round,pad=0.5', facecolor='white', edgecolor='black', alpha=0.5), transform=plt.gca().transAxes)
+            plt.text(x=0.05, y=0.95, s="LSL", ha='left', va='top',
+                     bbox=dict(boxstyle='round,pad=0.5', facecolor='white', edgecolor='black', alpha=0.5), transform=plt.gca().transAxes)
+            plt.text(x=0.95, y=0.45, s="CPK=22 \n CpU=22 \n CpL=11", ha='left', va='left',
+                     bbox=dict(boxstyle='round,pad=0.5', facecolor='white', edgecolor='black', alpha=0.5),
+                     transform=plt.gca().transAxes)
+
+            # ax.legend(bbox_to_anchor=(1.0, 1), loc='upper left')
             ax.set_title(label=testName)
             # fig = hist_plot.get_figure()
             # plt.legend()
