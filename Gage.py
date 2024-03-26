@@ -86,7 +86,8 @@ class Gage:
     @staticmethod
     def cooking_mean(arr_3d: np.array, grr_shape0, grr_shape1, grr_shape2):
         try:
-            overall_average = np.nan if np.isnan(np.mean(arr_3d)) else np.mean(arr_3d)
+            # has_nan = np.isnan(arr_3d).any()
+            overall_average = np.mean(arr_3d)  # if not has_nan else None
             op_mean_lst = [np.mean(arr_3d[x]) for x in range(grr_shape2)]  # shape >>> (3, 10, 3)
             dut_op_mean_lst = [np.mean(arr_3d[i], axis=1) for i in range(grr_shape0)]
             dut_mean_lst = [np.mean([arr_3d[0][i], arr_3d[1][i], arr_3d[2][i]]) for i in range(grr_shape1)]  # Average of DUT_A, Average of DUT_B, Average of DUT_C
@@ -100,7 +101,7 @@ class Gage:
             # raise ex.args
         return overall_average, op_mean_lst, dut_op_mean_lst, dut_mean_lst
 
-    def cooking_grr(self, *args):
+    def cooking_grr(self):
         RR_A = []
         RR_B = []
         RR_C = []
@@ -111,18 +112,26 @@ class Gage:
             grr_shape0 = arr_3d.shape[0]
             grr_shape1 = arr_3d.shape[1]
             grr_shape2 = arr_3d.shape[2]
+            # Initialize an empty array to store the converted values
+            float_arr = np.empty_like(arr_3d, dtype=float)
 
-            overall_average, op_mean_lst, dut_op_mean_lst, dut_mean_lst = Gage.cooking_mean(arr_3d, grr_shape0, grr_shape1, grr_shape2)
-            overall_trans = [(i - overall_average) ** 2 for i in arr_3d]  # total transform
+            # Iterate through the array and convert elements to float
+            for i in range(arr_3d.shape[0]):
+                for j in range(arr_3d.shape[1]):
+                    for k in range(arr_3d.shape[2]):
+                        float_arr[i, j, k] = float(arr_3d[i, j, k])
+
+            overall_average, op_mean_lst, dut_op_mean_lst, dut_mean_lst = Gage.cooking_mean(float_arr, grr_shape0, grr_shape1, grr_shape2)
+            overall_trans = [(i - overall_average) ** 2 for i in float_arr]  # total transform
             # print("RR_trans:", overall_trans)
             for j in range(grr_shape1):
                 for i in range(grr_shape2):
-                    squared_diff_A = (arr_3d[0][j][i] - float(dut_op_mean_lst[0][j])) ** 2
-                    # print(f"squared_diff_A: ({arr_3d[0][j][i]} - {dut_op_mean_lst[0][j]} )**2 ")
-                    squared_diff_B = (arr_3d[1][j][i] - float(dut_op_mean_lst[1][j])) ** 2
-                    # print(f"squared_diff_B: ({arr_3d[1][j][i]} - {dut_op_mean_lst[1][j]} )**2 ")
-                    squared_diff_C = (arr_3d[2][j][i] - float(dut_op_mean_lst[2][j])) ** 2
-                    # print(f"squared_diff_C: ({arr_3d[2][j][i]} - {dut_op_mean_lst[2][j]} )**2 ")
+                    squared_diff_A = (float_arr[0][j][i] - float(dut_op_mean_lst[0][j])) ** 2
+                    # print(f"squared_diff_A: ({float_arr[0][j][i]} - {dut_op_mean_lst[0][j]} )**2 ")
+                    squared_diff_B = (float_arr[1][j][i] - float(dut_op_mean_lst[1][j])) ** 2
+                    # print(f"squared_diff_B: ({float_arr[1][j][i]} - {dut_op_mean_lst[1][j]} )**2 ")
+                    squared_diff_C = (float_arr[2][j][i] - float(dut_op_mean_lst[2][j])) ** 2
+                    # print(f"squared_diff_C: ({float_arr[2][j][i]} - {dut_op_mean_lst[2][j]} )**2 ")
                     # print('-----------------------------------------')
                     RR_A.append(squared_diff_A)
                     RR_B.append(squared_diff_B)
@@ -136,7 +145,7 @@ class Gage:
             # print("RR_C:", RR_C_sum)
             # --------------------- Sum of square -----------------------------
             # number of test time of dut
-            dut_test_times = int(len(arr_3d[0][0])) + int(len(arr_3d[1][0])) + int(len(arr_3d[2][0]))
+            dut_test_times = int(len(float_arr[0][0])) + int(len(float_arr[1][0])) + int(len(float_arr[2][0]))
             SS_DUT = [(dut_mean_lst[i] - np.mean(dut_mean_lst)) ** 2 * dut_test_times for i in range(grr_shape1)]
 
             SS_OP_A = grr_shape1 * grr_shape2 * (op_mean_lst[0] - overall_average) ** 2
@@ -195,14 +204,13 @@ class Gage:
             # print("p_value1_t2: ", p_value1_t2)
             # print("p_value2_t2: ", p_value2_t2)
             # -------------- GRR_Variance --------------
-            grr_tolerance = self.grr_variance(self.range_spec, grr_shape1, grr_shape2,
-                                              MS_0, MS_1, MS_2, MS_3, MS_0_t2, MS_1_t2, MS_2_t2, p_value1, p_value3, F3)
+            grr_tolerance = self.grr_variance(self.range_spec, grr_shape1, grr_shape2, MS_0, MS_1, MS_2, MS_3, MS_0_t2, MS_1_t2, MS_2_t2, p_value1, p_value3, F3)
 
         except RuntimeWarning as ex:
             print(f"RuntimeWarning$NG >>> " + str(ex.args))
             return np.nan
         except Exception as ex:
-            print(f"calc" + str(ex.args))
+            print(f"cooking_grr$exception >>> " + str(ex.args))
             return np.nan
             # raise "calc failure => " + str(ex.args)
         return np.nan if np.isnan(F1) else grr_tolerance
