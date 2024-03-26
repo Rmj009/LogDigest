@@ -389,12 +389,11 @@ class RfVisualize:
             raise str('__name__') + str(e.args)
 
     def CPK_Chart(self, *args):
-        data, lsl, usl, cpk = args
+        data, lsl, usl, cpk, cpl, cpu = args
         current_time = datetime.datetime.now()
         formatted_time = current_time.strftime(f'%H%M%S')
         testName = re.sub(r'[./]', '', data[0])
         output_path = os.path.join(self.Diagram_path, f'CPK$NG_{testName}{formatted_time}')
-        # num_bins = 1
         try:
             # fig, ax = plt.subplots()
             plt.figure(figsize=(10, 6))
@@ -402,7 +401,6 @@ class RfVisualize:
             # sns.move_legend(ax, "center right")
             # ax = plt.gca()
             plt.grid(True)
-
             # n, bins, patches = plt.hist(stats.mean(data), num_bins,
             #                             density=True,
             #                             color='green',
@@ -428,16 +426,16 @@ class RfVisualize:
                      bbox=dict(boxstyle='round,pad=0.5', facecolor='white', edgecolor='black', alpha=0.5), transform=plt.gca().transAxes)
             plt.text(x=0.05, y=0.95, s="LSL", ha='left', va='top',
                      bbox=dict(boxstyle='round,pad=0.5', facecolor='white', edgecolor='black', alpha=0.5), transform=plt.gca().transAxes)
-            plt.text(x=0.95, y=0.45, s="CPK=22 \n CpU=22 \n CpL=11", ha='left', va='left',
-                     bbox=dict(boxstyle='round,pad=0.5', facecolor='white', edgecolor='black', alpha=0.5),
-                     transform=plt.gca().transAxes)
-
+            # plt.text(x=0.03, y=0.10, s=f'CPK={cpk} \n CpU={cpu} \n CpL={cpl}', ha='left', va='center',
+            #          bbox=dict(boxstyle='round,pad=0.5', facecolor='white', edgecolor='black', alpha=0.5),
+            #          transform=plt.gca().transAxes)
+            plt.annotate(f'CPK={cpk} \n CpU={cpu} \n CpL={cpl}', xy=(stats.mean(data[1]), 1), xytext=(stats.mean(data[1]) + 1, 1),
+                         arrowprops=dict(facecolor='black', arrowstyle='->'))
             # ax.legend(bbox_to_anchor=(1.0, 1), loc='upper left')
             ax.set_title(label=testName)
             # fig = hist_plot.get_figure()
             # plt.legend()
             plt.savefig(f'{output_path}.png')
-            # fig.savefig(f'{output_path}.png')  # os.path.join(self.Diagram_path, f'{data.name}')
         except Exception as e:
             raise f'{__name__}$NG >>> {e.args}'
 

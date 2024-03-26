@@ -142,30 +142,14 @@ class StartPage(object):
         try:
             self.util_obj.grr_summary(self.result_path)
             self.info_manager.update_info("GRR Summary", f'{self.result_path}')
-            self.btnConcludeGRR.config(state=tk.ACTIVE)
+            # self.btnConcludeGRR.config(state=tk.ACTIVE)
         except Exception as e:
             messagebox.showerror("Summary NG", "Plz retry")
             raise "summary_grr NG >>> " + str(e.args)
 
-    def calc_grr(self, df, avg_weigh):
-        global origin_log_fileName
+    def calc_grr(self, df):  # , avg_weigh):
         try:
-            # csv_ith = self.combo.get()[3]  # need debug
-            # if not os.path.exists(self.result_path):
-            #     os.mkdir(self.result_path)
-            # else:
-            #     all_grr_csv = os.listdir(self.result_path)
-            #     for file in all_grr_csv:
-            #         if file.endswith(".csv") or file.endswith(".xlsx"):
-            #             file_path = os.path.join(self.result_path, file)
-            #             os.remove(file_path)
-            #             print(f'remove file >>>{file_path}')
-            # data_path = os.path.join(self.Data_logs, f'trySample.xlsx')
             self.util_obj.grr_roasting(df, avg_weigh=3)
-            # elif avg_weigh > 3:
-            #     for w in range(2, avg_weigh):  # avg_weigh
-            #         self.util_obj.grr_roasting(data_path2, w)
-
             # for csv_ith, csv in enumerate(grr_csv_):
             """
             GRR for multiple averaging for vertical data display
@@ -179,7 +163,9 @@ class StartPage(object):
             # self.info_manager.update_info("Gage R&R Calculation", f'{self.result_path}')
             # self.btnSummaryGRR.config(state=tk.ACTIVE)
         except Exception as e:
-            raise "calculate GRR err >>> " + str(e.args)
+            print("calculate GRR err >>> " + str(e.args))
+            messagebox.showerror("Xlsx File might open!", "Plz close xlsx & try again")
+            # raise "calculate GRR err >>> " + str(e.args)
 
     def Clone_Weight_Data(self):
         try:
@@ -229,7 +215,7 @@ class StartPage(object):
                                                   f'Test_Items: {df_info[1]}         Stress_times: {df_info[0]} '
                                                   f'\r\n  StressTest under 90,  cannot run GRR')
                 else:
-                    self.calc_grr(df=df, avg_weigh=3)
+                    self.calc_grr(df=df)  # , avg_weigh=3)
                     # self.btnGrrCalc.config(state=tk.ACTIVE)
                     self.info_manager.update_info("Open log",
                                                   f'Test_Items: {df_info[1]}         Stress_times: {df_info[0]}')
