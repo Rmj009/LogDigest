@@ -150,7 +150,6 @@ class StartPage(object):
     def calc_grr(self, df):  # , avg_weigh):
         try:
             self.util_obj.grr_roasting(df, avg_weigh=3)
-            # for csv_ith, csv in enumerate(grr_csv_):
             """
             GRR for multiple averaging for vertical data display
             """
@@ -168,8 +167,12 @@ class StartPage(object):
             # raise "calculate GRR err >>> " + str(e.args)
 
     def Clone_Weight_Data(self):
+        # Sort the files based on modification time (newest first)
         try:
-            self.util_obj.digest_xlsx(self.result_path)
+            files = os.listdir(self.result_path)
+            files.sort(key=lambda x: os.path.getmtime(os.path.join(self.result_path, x)), reverse=True)
+            result_xlsx_filename = os.path.join(self.result_path, files[0])
+            self.util_obj.digest_xlsx(result_xlsx_filename)
             self.info_manager.update_info("clone via weight", f'{self.result_path}')
             # self.btnConcludeGRR.config(state=tk.ACTIVE)
         except Exception as e:
@@ -190,6 +193,7 @@ class StartPage(object):
             raise "Clone_Weight_Data$NG >>> " + str(e.args)
 
     def open_log_txt(self):
+        global grr_lst
         proj = "IMQX"
         projName_file = f'{proj}.csv'
         countTestItems = 0
@@ -199,32 +203,39 @@ class StartPage(object):
         try:
             if not os.path.exists(self.Data_logs):
                 os.mkdir(self.Data_logs)
+            if not os.path.exists(self.result_path):
+                os.mkdir(self.result_path)
             if logPath := filedialog.askopenfilename(title='Select Files', filetypes=[('Text files', '*.txt'), ('All files', '*.*')]):
                 # os.path.isfile(logPath)
-                overall_txt_ = [f for f in logPath]
                 self.info_manager.start_info_manager_thread()
                 df_info = self.util_obj.Open_log_txt(logPath, os.path.join(self.Data_logs, projName_file))
                 files = os.listdir(self.Data_logs)
                 # Sort the files based on modification time (newest first)
                 files.sort(key=lambda x: os.path.getmtime(os.path.join(self.Data_logs, x)), reverse=True)
                 origin_log_fileName = os.path.splitext(os.path.basename(logPath))[0]
-                df = self.util_obj.washing(os.path.join(self.Data_logs, files[0]), df_info, origin_log_fileName)
-                # ----- acquire GRR column -----
-                if df_info[0] < 90:
-                    self.info_manager.update_info("Open log",
-                                                  f'Test_Items: {df_info[1]}         Stress_times: {df_info[0]} '
-                                                  f'\r\n  StressTest under 90,  cannot run GRR')
-                else:
-                    self.calc_grr(df=df)  # , avg_weigh=3)
+                Read1st_path = os.path.join(self.Data_logs, files[0])
+                # df, num_NG = self.util_obj.washing(read_parse_fileName, df_info, origin_log_fileName)
+                all_lst, LSL_lst, USL_lst = self.util_obj.washing(Read1st_path, df_info)
+                # ----- chk num of data before acquire GRR column -----
+                df = self.util_obj.pack_result(all_lst, LSL_lst, USL_lst, origin_log_fileName)
+                if df.shape[1] > 90:
+                    # self.calc_grr(df=df)  # , avg_weigh=3)
                     # self.btnGrrCalc.config(state=tk.ACTIVE)
-                    self.info_manager.update_info("Open log",
-                                                  f'Test_Items: {df_info[1]}         Stress_times: {df_info[0]}')
-
-                # self.combo.config(state=tk.ACTIVE)
-
+                    # self.combo.config(state=tk.ACTIVE)
+                    grr_lst = self.util_obj.grr_roasting(df)
+                    self.util_obj.grr_packingXlsx(grr_lst, 3)
+                    self.info_manager.update_info(f'Open log {logPath}',
+                                                  f'Test_Items: {df_info[1]}'
+                                                  f'    PASS: {(df.shape[1] - 5)}')  # NG:{num_NG}
+                else:
+                    self.info_manager.update_info(f'Open log {logPath}',
+                                                  f'Test Items: {df_info[1]}     PASS: {(df.shape[1] - 5)} '  # NG:{num_NG}
+                                                  f'\r\n  StressTest under 90,  cannot run GRR')
             else:
-                messagebox.showerror("Error File Type", "Err file reload file again")
-                self.info_manager.update_info("Open NG", "Try reload file again")
+                self.info_manager.update_info("Open NG", "Didn't select file")
+        except IOError as ioe:
+
+            messagebox.showerror("Xlsx File might open!", "Plz close xlsx & try again")
         except Exception as e:
             messagebox.showerror("FILE_ERR", "Invalid data log or EngMode data, Plz reload file")
             raise "log file NG >>> " + str(e.args)

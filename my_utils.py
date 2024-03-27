@@ -83,14 +83,15 @@ class Digest_utils:
             return np.nan
         return grr_value
 
-    def grr_cooking(self, pwd: str, csv_path, avg_weigh):  # vertical GRR calc
+    def grr_cooking(self, df, csv_path, avg_weigh):  # vertical GRR calc
         """
         split dataframe into A,B,C blocks
         :return:
         """
         grr_lst = [f'GRR{avg_weigh}']
         avg_lst = [f'AVG{avg_weigh}']
-
+        LSL = df['LSL']
+        USL = df['USL']
         try:
             df = pd.read_csv(f'{csv_path}', header=0, index_col=0)
             spec_array = df.iloc[[0, 1]].values[:, 1:]
@@ -98,17 +99,22 @@ class Digest_utils:
             for i in range(df.shape[1] - 1):
                 select_arr_ith = np.array(df.iloc[:, i + 1]).reshape(10, 9)
                 avg_lst.append(np.mean(select_arr_ith))
-                grr_lst.append(self.grr_calculation(select_arr_ith, spec_array[:, i]))
+                grr_lst.append(self.grr_calculation(select_arr_ith, USL[i], LSL[i]))
+                # grr_lst.append(self.grr_calculation(select_arr_ith, spec_array[:, i]))
             # df_result = pd.concat([df.iloc[:3], result, df.iloc[3:]]).reset_index(drop=True)
 
         except Exception as e:
             raise "grr_cooking NG >>> " + str(e.args)
-        return self.grr_packingCsv(pwd, csv_path, avg_lst, grr_lst, avg_weigh)
+        return self.grr_packingCsv(self.pwd, csv_path, avg_lst, grr_lst, avg_weigh)
 
-    def grr_roasting(self, df, avg_weigh):  # vertical GRR calc
-        grr_lst = []
+    def grr_roasting(self, df):  # vertical GRR calc
         try:
+            grr_lst = []
             # df = pd.read_excel(data_path, index_col=0, header=0, engine='openpyxl')
+            # gg = df.eq(np.nan)
+            # columns_to_drop = df.dtypes[df.dtypes == np.dtype(None)].index
+            # df.mask(df.astype(None).eq(None)).dropna()
+            # df.dropna(axis=0, how='all')
             LSL = df['LSL']
             USL = df['USL']
             for i, row in df.iterrows():
@@ -117,8 +123,9 @@ class Digest_utils:
         except IOError as ioe:
             print("Permission denied, because xlsx is opened! >>" + str(ioe.args))
         except Exception as e:
+            print("grr_roasting$NG >>> " + str(e.args))
             raise "grr_roasting$NG >>> " + str(e.args)
-        return self.grr_packingXlsx(grr_lst, avg_weigh)
+        return grr_lst
 
     def grr_packingXlsx(self, *args):
         grr_lst, avg_weigh = args
@@ -238,14 +245,10 @@ class Digest_utils:
             raise "xlsx file NG >>>" + str(e.args)
 
     def digest_xlsx(self, *args):
-        result_path = args
+        result_xlsx_filename = args[0]
         current_time = datetime.datetime.now()
         formatted_time = current_time.strftime(f'%H%M%S')
         try:
-            files = os.listdir(result_path[0])
-            # Sort the files based on modification time (newest first)
-            files.sort(key=lambda x: os.path.getmtime(os.path.join(result_path[0], x)), reverse=True)
-            result_xlsx_filename = os.path.join(result_path[0], files[0])
             df = pd.read_excel(result_xlsx_filename, index_col=0, header=0, engine='openpyxl')
             # df = df[(df['USL']) != 0 | (df['LSL'] != 0)]  # drop both USL LSL => zero imply GRR => NAN
             # xls = pd.ExcelFile(result_xlsx_filename, engine='openpyxl')  # "Weighed_result.xlsx"
@@ -303,7 +306,6 @@ class Digest_utils:
     def grr_weigh_pack(self, *args):
         # pure numeric handling
         grr_lst = []
-
         try:
             data, avg_weigh = args
             result_arr = []
@@ -833,7 +835,7 @@ class Digest_utils:
         result = (countStressTimes, len(testItem_lst), LSL_lst, USL_lst)
         return result
 
-    def washing(self, file_path, df_info, result_fileName):
+    def washing(self, file_path, df_info):
         """
         Diagnosis >>> count test items
         :return:
@@ -844,11 +846,9 @@ class Digest_utils:
         all_lst = []
         LSL_lst = df_info[2]
         USL_lst = df_info[3]
-        # data_lst = []
         data_container = {item: None for item in testItem_lst}
-        countTestItems = df_info[1]
-        # compensate for test item not run
         num_lost_lines = 0
+        num_NG = 0
         isNG_Occur = False
         heap_testItem_lst = []
         stack_testItem_lst = testItem_lst.copy()
@@ -856,8 +856,6 @@ class Digest_utils:
             with open(file_path, mode='r', encoding='utf-16', errors='ignore') as file:
                 lines = file.readlines()
                 for ith, line in enumerate(lines, start=1):
-                    if ith == 3904:
-                        print("---")
                     if "TestWarning" in line or "EngMode" in line or "RetryTimes" in line:
                         print("engineering mode, invalid parsing")
                         continue
@@ -870,28 +868,31 @@ class Digest_utils:
                     testItem_values = line[index2 + len(keyword2):].strip()
                     # num_lost_lines = testItem_lst.index(test_item_name)
                     # # data_lst = data_lst + [np.nan] * abs(num_lost_lines)
-                    # data_container[test_item_name] = testItem_values
                     # stack_testItem_lst.remove(test_item_name)
                     if test_item_name not in testItem_lst:
                         print("--- Ignore singular testItem ---")
                         num_lost_lines -= 1
                         continue
                     elif isNG_Occur and test_item_name == testItem_lst[0]:
+                        print("--- jump next round after encounter NG ---")
+                        num_NG += 1
                         stack_testItem_lst.clear()
                     elif test_item_name in heap_testItem_lst:
                         print("--- involving retry ---")
                         data_container[test_item_name] = testItem_values
                     else:
                         item = stack_testItem_lst.pop(0)
-                        heap_testItem_lst.append(item)    # testItem already done
-                        data_container[test_item_name] = testItem_values
                         item_lsl = LSL_lst[testItem_lst.index(f'{item}')]
                         item_usl = USL_lst[testItem_lst.index(f'{item}')]
-                        if item_lsl == item_usl or isinstance(item_usl, str) or isinstance(item_usl, str):
+                        heap_testItem_lst.append(item)  # testItem already done
+                        data_container[test_item_name] = testItem_values
+
+                        if item_lsl == item_usl:
+                            print("---- USL = LSL ----")
+                        elif self.Instance_try_parse(item_usl) or self.Instance_try_parse(item_lsl) or self.Instance_try_parse(testItem_values):
                             print(" ---- none-sense spec or spec => literals---- ")
-                        elif testItem_values > item_usl or testItem_values < item_lsl:
+                        elif float(testItem_values) > float(item_usl) or float(testItem_values) < float(item_lsl):
                             isNG_Occur = True
-                        # data_lst.append(testItem_values)
                     if len(stack_testItem_lst) == 0:  # len(data_lst) == len(testItem_lst):
                         # if all(np.isnan(x) for x in np.array(data_lst).astype(float) if isinstance(x, (int, float))):
                         #     raise Exception("all values NAN")
@@ -900,35 +901,40 @@ class Digest_utils:
                         heap_testItem_lst.clear()
                         stack_testItem_lst = testItem_lst.copy()
                         data_container = {item: None for item in stack_testItem_lst}
-                    # if stack_testItem_lst[0] != testItem_lst[-1]:
-                    #     rest_test_items = len(testItem_lst) - len(stack_testItem_lst)
-                    #     all_lst.append(data_container)
-                    #     stack_testItem_lst = testItem_lst.copy()
-                    #     data_container = {item: None for item in stack_testItem_lst}
-                df = self.pack_result(all_lst, LSL_lst, USL_lst, testItem_lst, result_fileName)
-                return df
+                # df = self.pack_result(all_lst, LSL_lst, USL_lst, result_fileName)
+                return all_lst, LSL_lst, USL_lst  # df, num_NG
         except Exception as e:
             raise "washing$NG >>> " + str(e.args)
         finally:
             file.close()
 
-    def pack_result(self, result_list, LSL_lst, USL_lst, testItem_lst, result_fileName) -> pd.DataFrame():
+    @staticmethod
+    def Instance_try_parse(literal) -> bool:
+        try:
+            # isinstance(item_usl, str) or isinstance(item_usl, str)
+            float(literal)
+            return False
+        except Exception as e:
+            print("pure string" + str(e.args))
+            return True
+
+    def pack_result(self, result_list, LSL_lst, USL_lst, result_fileName) -> pd.DataFrame():
 
         try:
             # df = pd.DataFrame(np.array(result_list))
-            df = pd.DataFrame.from_dict(result_list)
             # df.columns = pd.Series(testItem_lst)
+            df = pd.DataFrame.from_dict(result_list)
             df = df.T
+            df = df.dropna(axis=1, how='all')
+            df = df.dropna(axis=0, how='all')
             df.insert(loc=0, column='LSL', value=LSL_lst)
             df.insert(loc=1, column='USL', value=USL_lst)
             df.insert(loc=2, column='AVG', value="")
             df.insert(loc=3, column='STD', value="")
             df.insert(loc=4, column='CPK', value="")
-            # df.insert(loc=5, column='GRR', value="")
-            # df.reset_index()
             result_cpk_xlsx = os.path.join(self.output_path, result_fileName)
             writer = pd.ExcelWriter(f'{result_cpk_xlsx}.xlsx', engine='xlsxwriter', engine_kwargs={'options': {'strings_to_numbers': True}})
-            df.to_excel(writer, sheet_name='Sheet1')
+            df.to_excel(writer, sheet_name='GRR')
             self.xlsxInstance.cooking_xCPK(writer=writer, shape=df.shape)
             return df
         except IOError as e:
@@ -947,3 +953,13 @@ class Digest_utils:
             raise "xlsx result display$NG >>>" + str(e.args)
         finally:
             print(args)
+
+    def AcquireLatestFile(self):
+        try:
+            files = os.listdir(self.output_path)
+            # Sort the files based on modification time (newest first)
+            files.sort(key=lambda x: os.path.getmtime(os.path.join(self.output_path, x)), reverse=True)
+            xlsx_path = os.path.join(self.output_path, files[0])
+        except Exception as e:
+            raise "AcquireLatestFile$NG >>>" + str(e.args)
+        return xlsx_path
